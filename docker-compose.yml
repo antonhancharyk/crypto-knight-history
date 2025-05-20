@@ -1,0 +1,58 @@
+version: "3.7"
+
+services:
+  db:
+    container_name: db
+    image: postgres:16
+    env_file:
+      - .env
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrator:
+    container_name: migrator
+    image: migrate/migrate
+    env_file:
+      - .env
+    volumes:
+      - ./migrations:/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    command: -path=/migrations -database postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable up
+
+  app:
+    container_name: app
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    expose:
+      - "8080"
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      app:
+        condition: service_started
+    restart: always
+
+volumes:
+  db-data:
