@@ -12,16 +12,16 @@ import (
 func Connect() *sqlx.DB {
 	log.Println("DB is running...")
 
-	connectStr := fmt.Sprintf("user=%s dbname=%s sslmode=disable password=%s host=db", os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_PASSWORD"))
+	connectStr := fmt.Sprintf("user=%s dbname=%s sslmode=disable password=%s host=localhost", os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_PASSWORD"))
 
 	db, err := sqlx.Connect("postgres", connectStr)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	log.Println("DB is run")

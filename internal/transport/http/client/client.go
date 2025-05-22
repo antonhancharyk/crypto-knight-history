@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -33,7 +32,7 @@ func New() *HTTPClient {
 	}
 }
 
-func (c *HTTPClient) Get(url string, isBot bool) ([]byte, error) {
+func (c *HTTPClient) Get(url string) ([]byte, error) {
 	const maxRetries = 3
 	const retryDelay = 2 * time.Second
 
@@ -44,11 +43,8 @@ func (c *HTTPClient) Get(url string, isBot bool) ([]byte, error) {
 			return nil, err
 		}
 
-		if isBot {
-			req.Header.Set("Bot", "crypto-knight")
-		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-MBX-APIKEY", os.Getenv("PUBLIC_API_KEY"))
+		// req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_PUBLIC_API_KEY"))
 
 		res, err := c.client.Do(req)
 		if err != nil {
@@ -93,17 +89,14 @@ func (c *HTTPClient) Get(url string, isBot bool) ([]byte, error) {
 	return nil, fmt.Errorf("all retry attempts failed: %w", lastErr)
 }
 
-func (c *HTTPClient) Post(url string, body []byte, isBot bool) ([]byte, error) {
+func (c *HTTPClient) Post(url string, body []byte) ([]byte, error) {
 	req, err := http.NewRequest(POST, url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
 
-	if isBot {
-		req.Header.Set("Bot", "crypto-knight")
-	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-MBX-APIKEY", os.Getenv("PUBLIC_API_KEY"))
+	// req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_PUBLIC_API_KEY"))
 
 	res, err := c.client.Do(req)
 	if err != nil {
@@ -123,17 +116,14 @@ func (c *HTTPClient) Post(url string, body []byte, isBot bool) ([]byte, error) {
 	return body, err
 }
 
-func (c *HTTPClient) Delete(url string, isBot bool) ([]byte, error) {
+func (c *HTTPClient) Delete(url string) ([]byte, error) {
 	req, err := http.NewRequest(DELETE, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if isBot {
-		req.Header.Set("Bot", "crypto-knight")
-	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-MBX-APIKEY", os.Getenv("PUBLIC_API_KEY"))
+	// req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_PUBLIC_API_KEY"))
 
 	res, err := c.client.Do(req)
 	if err != nil {

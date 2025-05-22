@@ -12,5 +12,5 @@ create table if not exists klines (
     quote_asset_volume double precision not null,
     num_trades bigint not null,
     taker_buy_base_asset_volume double precision not null,
-    taker_buy_quote_asset_volume double precision not null,
+    taker_buy_quote_asset_volume double precision not null
 );

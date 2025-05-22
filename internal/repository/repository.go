@@ -7,9 +7,8 @@ import (
 )
 
 type Kline interface {
-	// GetAll(queryParams entity.QueryParams) ([]entity.Kline, error)
-	Create(track entity.Kline) error
-	CreateBulk(tracks []entity.Kline) error
+	GetLastKline() (entity.Kline, error)
+	CreateBulk(klines []entity.Kline) error
 }
 
 type Repository struct {
