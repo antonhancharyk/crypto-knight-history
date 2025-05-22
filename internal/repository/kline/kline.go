@@ -3,6 +3,7 @@ package kline
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +16,55 @@ type Kline struct {
 
 func New(db *sqlx.DB) *Kline {
 	return &Kline{db: db}
+}
+
+func (t *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	var (
+		klines []entity.Kline
+		args   []any
+		query  = "select * from klines where open_time >= $1 and open_time <= $2"
+	)
+
+	layout := "2006-01-02 15:04:05"
+
+	var fromStr, toStr string
+
+	if params.From == "" || params.To == "" {
+		now := time.Now()
+		firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		lastOfMonth := firstOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+
+		fromStr = firstOfMonth.Format(layout)
+		toStr = lastOfMonth.Format(layout)
+	} else {
+		fromStr = params.From
+		toStr = params.To
+	}
+
+	fromTime, err := time.ParseInLocation(layout, fromStr, time.UTC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'from' datetime: %w", err)
+	}
+	toTime, err := time.ParseInLocation(layout, toStr, time.UTC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'to' datetime: %w", err)
+	}
+
+	fromMillis := fromTime.UnixMilli()
+	toMillis := toTime.UnixMilli()
+
+	args = append(args, fromMillis, toMillis)
+
+	if params.Symbol != "" {
+		query += " and symbol = $3"
+		args = append(args, params.Symbol)
+	}
+
+	query += " order by open_time asc"
+
+	err = t.db.Select(&klines, query, args...)
+
+	return klines, err
 }
 
 func (t *Kline) GetLastKline() (entity.Kline, error) {

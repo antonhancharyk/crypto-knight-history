@@ -10,8 +10,9 @@ import (
 )
 
 type Kline interface {
-	GetKlines(params url.Values) []entity.Kline
+	GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error)
 	GetLastKline() (entity.Kline, error)
+	GetBinanceKlines(params url.Values) []entity.Kline
 	CreateBulk(tracks []entity.Kline) error
 	LoadKlinesForPeriod()
 }

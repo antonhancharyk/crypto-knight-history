@@ -14,10 +14,3 @@ type Track struct {
 	HighPrices pq.Float64Array `json:"high_prices" db:"high_prices"`
 	LowPrices  pq.Float64Array `json:"low_prices" db:"low_prices"`
 }
-
-type QueryParams struct {
-	From   string `form:"from"`
-	To     string `form:"to"`
-	Symbol string `form:"symbol"`
-	Full   bool   `form:"full"`
-}

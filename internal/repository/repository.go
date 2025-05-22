@@ -7,6 +7,7 @@ import (
 )
 
 type Kline interface {
+	GetKlines(getKlinesQueryParams entity.GetKlinesQueryParams) ([]entity.Kline, error)
 	GetLastKline() (entity.Kline, error)
 	CreateBulk(klines []entity.Kline) error
 }

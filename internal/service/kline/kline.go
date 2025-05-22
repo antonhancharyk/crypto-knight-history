@@ -24,7 +24,15 @@ func New(repo *repository.Repository, httpClient *client.HTTPClient) *Kline {
 	return &Kline{repo: repo, httpClient: httpClient}
 }
 
-func (k *Kline) GetKlines(params url.Values) []entity.Kline {
+func (k *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	return k.repo.Kline.GetKlines(params)
+}
+
+func (k *Kline) GetLastKline() (entity.Kline, error) {
+	return k.repo.Kline.GetLastKline()
+}
+
+func (k *Kline) GetBinanceKlines(params url.Values) []entity.Kline {
 	sbl := params.Get("symbol")
 
 	res, err := k.httpClient.Get(constant.KLINES_URI + "?" + params.Encode())
@@ -82,10 +90,6 @@ func (k *Kline) GetKlines(params url.Values) []entity.Kline {
 	return klinesBySymbol
 }
 
-func (k *Kline) GetLastKline() (entity.Kline, error) {
-	return k.repo.Kline.GetLastKline()
-}
-
 func (k *Kline) CreateBulk(klines []entity.Kline) error {
 	return k.repo.Kline.CreateBulk(klines)
 }
@@ -99,9 +103,9 @@ func (k *Kline) LoadKlinesForPeriod() {
 	startTime := time.Date(2025, 5, 1, 0, 0, 0, 0, time.UTC)
 	if lastKline.OpenTime != 0 {
 		log.Printf("find last kline [unix open time]: %d", lastKline.OpenTime)
-		startTime = time.Unix(lastKline.OpenTime, 0)
+		startTime = time.UnixMilli(lastKline.OpenTime).Add(1 * time.Hour).UTC()
 	} else {
-		log.Printf("last kline is empty [unix start time]: %d", startTime.Unix())
+		log.Printf("last kline is empty [unix start time]: %d", startTime.UnixMilli())
 	}
 	now := time.Now().UTC()
 	endTime := now.Truncate(time.Hour)
@@ -121,7 +125,7 @@ func (k *Kline) LoadKlinesForPeriod() {
 				params.Set("startTime", strconv.FormatInt(startTime.UnixMilli(), 10))
 				params.Set("endTime", strconv.FormatInt(startTime.Add(20*24*time.Hour).UnixMilli(), 10))
 
-				klns := k.GetKlines(params)
+				klns := k.GetBinanceKlines(params)
 
 				klines = append(klines, klns)
 			}(symbol)
@@ -139,7 +143,7 @@ func (k *Kline) LoadKlinesForPeriod() {
 		wg.Wait()
 
 		if len(klines) != 0 {
-			log.Printf("add new klines [quantity]: %d", len(klines[0]))
+			log.Printf("add new klines [quantity]: %d, [unix open time from]: %d, [unix open time to]: %d", len(klines[0]), klines[0][0].OpenTime, klines[0][len(klines[0])-1].OpenTime)
 		}
 
 		startTime = startTime.Add(20 * 24 * time.Hour)

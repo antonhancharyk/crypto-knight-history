@@ -22,3 +22,9 @@ type Kline struct {
 }
 
 type MapKlines map[string][]Kline
+
+type GetKlinesQueryParams struct {
+	From   string `form:"from"`
+	To     string `form:"to"`
+	Symbol string `form:"symbol"`
+}

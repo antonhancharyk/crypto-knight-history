@@ -20,7 +20,7 @@ func Run() {
 
 	log.Println("History is running...")
 
-	godotenv.Load("../.env")
+	godotenv.Load()
 
 	db := db.Connect()
 	defer db.Close()
