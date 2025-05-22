@@ -9,7 +9,7 @@ func FromUnixToUTC(msec int64) time.Time {
 }
 
 func SleepUntilNextHour() {
-	now := time.Now()
+	now := time.Now().UTC()
 	next := now.Truncate(time.Hour).Add(time.Hour)
 	time.Sleep(time.Until(next))
 }

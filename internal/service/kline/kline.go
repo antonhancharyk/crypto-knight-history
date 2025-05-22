@@ -114,20 +114,23 @@ func (k *Kline) LoadKlinesForPeriod() {
 
 	for startTime.Before(endTime) {
 		klines := [][]entity.Kline{}
+		var mu sync.Mutex
 		wg.Add(len(constant.SYMBOLS))
 		for _, symbol := range constant.SYMBOLS {
 			go func(sbl string) {
 				defer wg.Done()
 
 				params := url.Values{}
-				params.Set("symbol", symbol)
+				params.Set("symbol", sbl)
 				params.Set("interval", constant.INTERVAL_KLINES)
 				params.Set("startTime", strconv.FormatInt(startTime.UnixMilli(), 10))
 				params.Set("endTime", strconv.FormatInt(startTime.Add(20*24*time.Hour).UnixMilli(), 10))
 
 				klns := k.GetBinanceKlines(params)
 
+				mu.Lock()
 				klines = append(klines, klns)
+				mu.Unlock()
 			}(symbol)
 		}
 		wg.Wait()
@@ -142,8 +145,9 @@ func (k *Kline) LoadKlinesForPeriod() {
 		}
 		wg.Wait()
 
-		if len(klines) != 0 {
-			log.Printf("add new klines [quantity]: %d, [unix open time from]: %d, [unix open time to]: %d", len(klines[0]), klines[0][0].OpenTime, klines[0][len(klines[0])-1].OpenTime)
+		if len(klines) > 0 && len(klines[0]) > 0 {
+			log.Printf("add new klines [quantity]: %d, [unix open time from]: %d, [unix open time to]: %d",
+				len(klines[0]), klines[0][0].OpenTime, klines[0][len(klines[0])-1].OpenTime)
 		}
 
 		startTime = startTime.Add(20 * 24 * time.Hour)

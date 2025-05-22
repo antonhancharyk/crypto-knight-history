@@ -118,7 +118,14 @@ func (k *Kline) CreateBulk(klines []entity.Kline) error {
 		)
 		VALUES %s`, strings.Join(placeholders, ","))
 
-	_, err := k.db.Exec(query, values...)
-
-	return err
+	tx, err := k.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(query, values...)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
