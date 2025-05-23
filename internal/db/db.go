@@ -10,26 +10,50 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Connect() *sqlx.DB {
-	log.Println("DB is running...")
+type Client struct {
+	DB *sqlx.DB
+}
 
-	connectStr := fmt.Sprintf("user=%s dbname=%s sslmode=disable password=%s host=localhost", os.Getenv("DB_USER"), os.Getenv("DB_NAME"), os.Getenv("DB_PASSWORD"))
+func New() *Client {
+	return &Client{}
+}
 
-	db, err := sqlx.Connect("postgres", connectStr)
+func (c *Client) Connect() error {
+	log.Println("DB client is connecting...")
+
+	connStr := fmt.Sprintf(
+		"user=%s dbname=%s sslmode=disable password=%s host=localhost",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("DB_PASSWORD"),
+	)
+
+	db, err := sqlx.Connect("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to connect to DB: %w", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ping error: %w", err)
 	}
 
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(time.Minute * 5)
+	db.SetConnMaxLifetime(5 * time.Minute)
 
-	log.Println("DB is run")
+	c.DB = db
 
-	return db
+	log.Println("DB client is connected")
+
+	return nil
+}
+
+func (c *Client) Close() error {
+	if c.DB != nil {
+		log.Println("DB connection is closing...")
+		return c.DB.Close()
+	}
+
+	return nil
 }

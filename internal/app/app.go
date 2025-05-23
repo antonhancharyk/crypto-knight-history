@@ -9,7 +9,8 @@ import (
 	"github.com/antonhancharyk/crypto-knight-history/internal/db"
 	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
 	"github.com/antonhancharyk/crypto-knight-history/internal/service"
-	"github.com/antonhancharyk/crypto-knight-history/internal/transport/http/client"
+	grpcClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/grpc/client"
+	httpClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/http/client"
 	"github.com/antonhancharyk/crypto-knight-history/pkg/utilities"
 	"github.com/joho/godotenv"
 )
@@ -22,15 +23,24 @@ func Run() {
 
 	godotenv.Load()
 
-	db := db.Connect()
-	defer db.Close()
+	clientDB := db.New()
+	err := clientDB.Connect()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer clientDB.Close()
 
-	repo := repository.New(db)
-	httpClient := client.New()
+	grpcClient := grpcClient.New()
+	err = grpcClient.Connect("bot.crypto-knight.site:50051")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer grpcClient.Close()
 
+	httpClient := httpClient.New()
+
+	repo := repository.New(clientDB.DB)
 	svc := service.New(repo, httpClient)
-
-	log.Println("History is run")
 
 	svc.Kline.LoadKlinesForPeriod()
 	log.Println("History is full")
@@ -41,8 +51,16 @@ func Run() {
 		}
 	}()
 
+	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	// defer cancel()
+	// resp, err := grpcClient.History.ProcessHistory(ctx, &pbHistory.GetHistoryRequest{
+	// 	Symbol: "BTCUSDT",
+	// })
+	// if err != nil {
+	// 	log.Fatalf("request failed: %v", err)
+	// }
+
 	<-quit
 
-	log.Println("History is stopping...")
 	log.Println("History is stopped")
 }
