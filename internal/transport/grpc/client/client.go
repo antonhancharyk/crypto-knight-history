@@ -35,14 +35,12 @@ func (c *Client) Connect(addr string) error {
 	c.conn = conn
 	c.History = pbHistory.NewHistoryServiceClient(conn)
 
-	log.Println("gRPC client is connected")
-
 	return nil
 }
 
 func (c *Client) Close() error {
 	if c.conn != nil {
-		log.Println("gRPC client is closing connection...")
+		log.Println("shutting down gRPC client connection...")
 		return c.conn.Close()
 	}
 

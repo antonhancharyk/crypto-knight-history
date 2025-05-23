@@ -1,16 +1,20 @@
 package app
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/antonhancharyk/crypto-knight-history/internal/db"
 	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
 	"github.com/antonhancharyk/crypto-knight-history/internal/service"
 	grpcClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/grpc/client"
 	httpClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/http/client"
+	"github.com/antonhancharyk/crypto-knight-history/internal/transport/http/server"
 	"github.com/antonhancharyk/crypto-knight-history/pkg/utilities"
 	"github.com/joho/godotenv"
 )
@@ -19,12 +23,13 @@ func Run() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Println("History is running...")
-
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	dbClient := db.New()
-	err := dbClient.Connect()
+	err = dbClient.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,11 +44,19 @@ func Run() {
 
 	httpClient := httpClient.New()
 
+	httpServer := server.New(":8080")
+	go func() {
+		err := httpServer.Start()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
 	repo := repository.New(dbClient.DB)
 	svc := service.New(repo, httpClient)
 
 	svc.Kline.LoadKlinesForPeriod()
-	log.Println("History is full")
+	log.Println("history is full")
 	go func() {
 		for {
 			utilities.SleepUntilNextHour()
@@ -62,5 +75,11 @@ func Run() {
 
 	<-quit
 
-	log.Println("History is stopped")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = httpServer.Shutdown(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

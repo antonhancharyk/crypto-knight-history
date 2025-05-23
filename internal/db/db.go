@@ -44,14 +44,12 @@ func (c *Client) Connect() error {
 
 	c.DB = db
 
-	log.Println("DB client is connected")
-
 	return nil
 }
 
 func (c *Client) Close() error {
 	if c.DB != nil {
-		log.Println("DB connection is closing...")
+		log.Println("shutting down DB client connection...")
 		return c.DB.Close()
 	}
 
