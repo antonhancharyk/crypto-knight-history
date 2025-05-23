@@ -17,7 +17,7 @@ type Kline interface {
 	GetBinanceKlines(params url.Values) []entity.Kline
 	CreateBulk(tracks []entity.Kline) error
 	LoadKlinesForPeriod()
-	ProcessHistory(ctx context.Context) (*entity.History, error)
+	ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]*entity.History, error)
 }
 
 type Service struct {

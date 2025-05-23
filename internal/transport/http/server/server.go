@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
 	"github.com/antonhancharyk/crypto-knight-history/internal/service"
 )
 
@@ -47,19 +48,12 @@ func (s *HTTPServer) Shutdown(ctx context.Context) error {
 }
 
 func (s *HTTPServer) handleHistory(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
 	defer cancel()
 
-	from := r.URL.Query().Get("from")
-	to := r.URL.Query().Get("to")
-	symbol := r.URL.Query().Get("symbol")
-
-	if from == "" || to == "" || symbol == "" {
-		http.Error(w, "Missing query parameters: from, to, symbol", http.StatusBadRequest)
-		return
-	}
-
-	res, err := s.svc.Kline.ProcessHistory(ctx)
+	res, err := s.svc.Kline.ProcessHistory(ctx, entity.GetKlinesQueryParams{From: r.URL.Query().Get("from"),
+		To:     r.URL.Query().Get("to"),
+		Symbol: r.URL.Query().Get("symbol")})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

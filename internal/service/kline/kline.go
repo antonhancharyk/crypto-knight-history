@@ -159,11 +159,25 @@ func (k *Kline) LoadKlinesForPeriod() {
 	}
 }
 
-func (k *Kline) ProcessHistory(ctx context.Context) (*entity.History, error) {
-	res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{})
+func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]*entity.History, error) {
+	klines, err := k.GetKlines(params)
 	if err != nil {
 		return nil, err
 	}
 
-	return &entity.History{Symbol: res.Symbol, AmountPositivePercentages: res.AmountPositivePercentages, AmountNegativePercentages: res.AmountNegativePercentages, QuantityStopMarkets: res.QuantityStopMarkets}, nil
+	var inputKlines []*pbHistory.InputKline
+	for _, v := range klines {
+		inputKlines = append(inputKlines, &pbHistory.InputKline{Id: v.Id, Symbol: v.Symbol, OpenTime: v.OpenTime, OpenPrice: v.OpenPrice, HighPrice: v.HighPrice, LowPrice: v.LowPrice, ClosePrice: v.ClosePrice, Volume: v.Volume, CloseTime: v.CloseTime, QuoteAssetVolume: v.QuoteAssetVolume, NumTrades: v.NumTrades, TakerBuyBaseAssetVolume: v.TakerBuyBaseAssetVolume, TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume})
+	}
+
+	// TODO pass params to grpc from and to
+	res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{Klines: inputKlines})
+	if err != nil {
+		return nil, err
+	}
+
+	var total []*entity.History
+	total = append(total, &entity.History{Symbol: res.Symbol, AmountPositivePercentages: res.AmountPositivePercentages, AmountNegativePercentages: res.AmountNegativePercentages, QuantityStopMarkets: res.QuantityStopMarkets})
+
+	return total, nil
 }

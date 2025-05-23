@@ -56,7 +56,7 @@ func Run() {
 	}()
 
 	svc.Kline.LoadKlinesForPeriod()
-	log.Println("history is full")
+	log.Println("initial klines are loaded")
 	go func() {
 		for {
 			utilities.SleepUntilNextHour()
