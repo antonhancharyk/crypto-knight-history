@@ -36,7 +36,7 @@ func Run() {
 	defer dbClient.Close()
 
 	grpcClient := grpcClient.New()
-	err = grpcClient.Connect("bot.crypto-knight.site:50051")
+	err = grpcClient.Connect("194.146.38.167:50051")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,16 +44,16 @@ func Run() {
 
 	httpClient := httpClient.New()
 
-	httpServer := server.New(":8080")
+	repo := repository.New(dbClient.DB)
+	svc := service.New(repo, httpClient, grpcClient)
+
+	httpServer := server.New(":8080", svc)
 	go func() {
 		err := httpServer.Start()
 		if err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
 	}()
-
-	repo := repository.New(dbClient.DB)
-	svc := service.New(repo, httpClient)
 
 	svc.Kline.LoadKlinesForPeriod()
 	log.Println("history is full")
@@ -63,15 +63,6 @@ func Run() {
 			svc.Kline.LoadKlinesForPeriod()
 		}
 	}()
-
-	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	// defer cancel()
-	// resp, err := grpcClient.History.ProcessHistory(ctx, &pbHistory.GetHistoryRequest{
-	// 	Symbol: "BTCUSDT",
-	// })
-	// if err != nil {
-	// 	log.Fatalf("request failed: %v", err)
-	// }
 
 	<-quit
 

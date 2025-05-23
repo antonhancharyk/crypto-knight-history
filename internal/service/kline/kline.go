@@ -1,6 +1,7 @@
 package kline
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/url"
@@ -8,9 +9,11 @@ import (
 	"sync"
 	"time"
 
+	pbHistory "github.com/antongoncharik/crypto-knight-protos/gen/go/history"
 	"github.com/antonhancharyk/crypto-knight-history/internal/constant"
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
 	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
+	grpcClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/grpc/client"
 	"github.com/antonhancharyk/crypto-knight-history/internal/transport/http/client"
 	"github.com/antonhancharyk/crypto-knight-history/pkg/utilities"
 )
@@ -18,10 +21,11 @@ import (
 type Kline struct {
 	repo       *repository.Repository
 	httpClient *client.HTTPClient
+	grpcClient *grpcClient.Client
 }
 
-func New(repo *repository.Repository, httpClient *client.HTTPClient) *Kline {
-	return &Kline{repo: repo, httpClient: httpClient}
+func New(repo *repository.Repository, httpClient *client.HTTPClient, grpcClient *grpcClient.Client) *Kline {
+	return &Kline{repo: repo, httpClient: httpClient, grpcClient: grpcClient}
 }
 
 func (k *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
@@ -153,4 +157,13 @@ func (k *Kline) LoadKlinesForPeriod() {
 		startTime = startTime.Add(20 * 24 * time.Hour)
 		time.Sleep(15 * time.Second)
 	}
+}
+
+func (k *Kline) ProcessHistory(ctx context.Context) (*entity.History, error) {
+	res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.History{Symbol: res.Symbol, AmountPositivePercentages: res.AmountPositivePercentages, AmountNegativePercentages: res.AmountNegativePercentages, QuantityStopMarkets: res.QuantityStopMarkets}, nil
 }

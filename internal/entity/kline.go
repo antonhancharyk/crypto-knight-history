@@ -28,3 +28,10 @@ type GetKlinesQueryParams struct {
 	To     string `form:"to"`
 	Symbol string `form:"symbol"`
 }
+
+type History struct {
+	Symbol                    string  `json:"symbol"`
+	AmountPositivePercentages float64 `json:"amount_positive_percentages"`
+	AmountNegativePercentages float64 `json:"amount_negative_percentages"`
+	QuantityStopMarkets       float64 `json:"quantity_stop_markets"`
+}

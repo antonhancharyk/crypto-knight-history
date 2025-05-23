@@ -2,25 +2,32 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net"
 	"net/http"
+	"time"
+
+	"github.com/antonhancharyk/crypto-knight-history/internal/service"
 )
 
 type HTTPServer struct {
 	server *http.Server
+	svc    *service.Service
 }
 
-func New(addr string) *HTTPServer {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/history", handleHistory)
+func New(addr string, svc *service.Service) *HTTPServer {
+	s := &HTTPServer{svc: svc}
 
-	s := &http.Server{
+	mux := http.NewServeMux()
+	mux.HandleFunc("/history", s.handleHistory)
+
+	s.server = &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
-	return &HTTPServer{server: s}
+	return s
 }
 
 func (s *HTTPServer) Start() error {
@@ -39,7 +46,10 @@ func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }
 
-func handleHistory(w http.ResponseWriter, r *http.Request) {
+func (s *HTTPServer) handleHistory(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	from := r.URL.Query().Get("from")
 	to := r.URL.Query().Get("to")
 	symbol := r.URL.Query().Get("symbol")
@@ -49,7 +59,13 @@ func handleHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res, err := s.svc.Kline.ProcessHistory(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"ok","from":"` + from + `","to":"` + to + `","symbol":"` + symbol + `"}`))
+	json.NewEncoder(w).Encode(res)
 }
