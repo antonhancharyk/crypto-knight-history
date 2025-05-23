@@ -23,12 +23,12 @@ func Run() {
 
 	godotenv.Load()
 
-	clientDB := db.New()
-	err := clientDB.Connect()
+	dbClient := db.New()
+	err := dbClient.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer clientDB.Close()
+	defer dbClient.Close()
 
 	grpcClient := grpcClient.New()
 	err = grpcClient.Connect("bot.crypto-knight.site:50051")
@@ -39,7 +39,7 @@ func Run() {
 
 	httpClient := httpClient.New()
 
-	repo := repository.New(clientDB.DB)
+	repo := repository.New(dbClient.DB)
 	svc := service.New(repo, httpClient)
 
 	svc.Kline.LoadKlinesForPeriod()
