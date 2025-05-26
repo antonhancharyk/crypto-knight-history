@@ -19,7 +19,7 @@ jobs:
 
       - name: Build container image and push
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} ./config/docker
+          docker build -f config/docker/Dockerfile -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} .
           docker login -u ${{ env.REGISTRY }} -p ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
