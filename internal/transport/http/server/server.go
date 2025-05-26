@@ -21,6 +21,10 @@ func New(addr string, svc *service.Service) *HTTPServer {
 	s := &HTTPServer{svc: svc}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
 	mux.HandleFunc("/history", s.handleHistory)
 
 	s.server = &http.Server{

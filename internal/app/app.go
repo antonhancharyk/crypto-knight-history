@@ -55,12 +55,18 @@ func Run() {
 		}
 	}()
 
-	svc.Kline.LoadKlinesForPeriod()
+	err = svc.Kline.LoadKlinesForPeriod()
+	if err != nil {
+		log.Print(err)
+	}
 	log.Println("initial klines are loaded")
 	go func() {
 		for {
 			utilities.SleepUntilNextHour()
-			svc.Kline.LoadKlinesForPeriod()
+			err := svc.Kline.LoadKlinesForPeriod()
+			if err != nil {
+				log.Print(err)
+			}
 		}
 	}()
 

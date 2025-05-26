@@ -36,18 +36,18 @@ func (k *Kline) GetLastKline() (entity.Kline, error) {
 	return k.repo.Kline.GetLastKline()
 }
 
-func (k *Kline) GetBinanceKlines(params url.Values) []entity.Kline {
+func (k *Kline) GetBinanceKlines(params url.Values) ([]entity.Kline, error) {
 	sbl := params.Get("symbol")
 
 	res, err := k.httpClient.Get(constant.KLINES_URI + "?" + params.Encode())
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	data := [][]any{}
 	err = json.Unmarshal(res, &data)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	lstIdx := len(data) - 1
@@ -91,17 +91,17 @@ func (k *Kline) GetBinanceKlines(params url.Values) []entity.Kline {
 		klinesBySymbol = append(klinesBySymbol, kline)
 	}
 
-	return klinesBySymbol
+	return klinesBySymbol, nil
 }
 
 func (k *Kline) CreateBulk(klines []entity.Kline) error {
 	return k.repo.Kline.CreateBulk(klines)
 }
 
-func (k *Kline) LoadKlinesForPeriod() {
+func (k *Kline) LoadKlinesForPeriod() error {
 	lastKline, err := k.GetLastKline()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	startTime := time.Date(2025, 5, 1, 0, 0, 0, 0, time.UTC)
@@ -117,7 +117,7 @@ func (k *Kline) LoadKlinesForPeriod() {
 	var wg sync.WaitGroup
 
 	for startTime.Before(endTime) {
-		klines := [][]entity.Kline{}
+		klines := make([][]entity.Kline, 0, len(constant.SYMBOLS))
 		var mu sync.Mutex
 		wg.Add(len(constant.SYMBOLS))
 		for _, symbol := range constant.SYMBOLS {
@@ -130,7 +130,11 @@ func (k *Kline) LoadKlinesForPeriod() {
 				params.Set("startTime", strconv.FormatInt(startTime.UnixMilli(), 10))
 				params.Set("endTime", strconv.FormatInt(startTime.Add(20*24*time.Hour).UnixMilli(), 10))
 
-				klns := k.GetBinanceKlines(params)
+				klns, err := k.GetBinanceKlines(params)
+				if err != nil {
+					log.Print(err)
+					return
+				}
 
 				mu.Lock()
 				klines = append(klines, klns)
@@ -144,7 +148,11 @@ func (k *Kline) LoadKlinesForPeriod() {
 			go func(kl []entity.Kline) {
 				defer wg.Done()
 
-				k.CreateBulk(kl)
+				err := k.CreateBulk(kl)
+				if err != nil {
+					log.Print(err)
+					return
+				}
 			}(v)
 		}
 		wg.Wait()
@@ -154,12 +162,14 @@ func (k *Kline) LoadKlinesForPeriod() {
 				len(klines[0]), klines[0][0].OpenTime, klines[0][len(klines[0])-1].OpenTime)
 		}
 
-		startTime = startTime.Add(20 * 24 * time.Hour)
+		startTime = startTime.Add(constant.KLINES_BATCH_DURATION)
 		time.Sleep(15 * time.Second)
 	}
+
+	return nil
 }
 
-func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]*entity.History, error) {
+func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]entity.History, error) {
 	klines, err := k.GetKlines(params)
 	if err != nil {
 		return nil, err
@@ -176,8 +186,8 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		return nil, err
 	}
 
-	var total []*entity.History
-	total = append(total, &entity.History{Symbol: res.Symbol, AmountPositivePercentages: res.AmountPositivePercentages, AmountNegativePercentages: res.AmountNegativePercentages, QuantityStopMarkets: res.QuantityStopMarkets})
+	var total []entity.History
+	total = append(total, entity.History{Symbol: res.Symbol, AmountPositivePercentages: res.AmountPositivePercentages, AmountNegativePercentages: res.AmountNegativePercentages, QuantityStopMarkets: res.QuantityStopMarkets})
 
 	return total, nil
 }
