@@ -1,0 +1,65 @@
+name: main
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: antgoncharik
+  IMAGE_NAME: crypto-knight-history
+  CONTAINER_NAME: crypto-knight-history
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v2
+
+      - name: Build container image and push
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} ./config/docker
+          docker login -u ${{ env.REGISTRY }} -p ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: build_and_push
+
+  #   steps:
+  #     - name: Checkout main
+  #       uses: actions/checkout@v2
+
+  #     - name: Copy artefacts
+  #       uses: appleboy/scp-action@master
+  #       with:
+  #         host: ${{ secrets.SERVER_HOST }}
+  #         username: ${{ secrets.SERVER_USERNAME }}
+  #         password: ${{ secrets.SERVER_PASSWORD }}
+  #         source: "./docker-compose.yml,./migrations,./config"
+  #         target: "./${{ env.IMAGE_NAME }}"
+
+  #     - name: Copy env file
+  #       uses: appleboy/ssh-action@master
+  #       with:
+  #         host: ${{ secrets.SERVER_HOST }}
+  #         username: ${{ secrets.SERVER_USERNAME }}
+  #         password: ${{ secrets.SERVER_PASSWORD }}
+  #         script: |
+  #           cd ${{ env.IMAGE_NAME }}
+  #           echo "${{ secrets.ENV_FILE }}" > .env
+
+  #     - name: Run services
+  #       uses: appleboy/ssh-action@master
+  #       with:
+  #         host: ${{ secrets.SERVER_HOST }}
+  #         username: ${{ secrets.SERVER_USERNAME }}
+  #         password: ${{ secrets.SERVER_PASSWORD }}
+  #         script: |
+  #           cd ${{ env.IMAGE_NAME }}
+  #           docker login -u ${{ env.REGISTRY }} -p ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+  #           docker-compose pull
+  #           docker-compose up -d --remove-orphans
+  #           docker image prune -f
+            
