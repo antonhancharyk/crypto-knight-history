@@ -104,7 +104,7 @@ func (k *Kline) LoadKlinesForPeriod() error {
 		return err
 	}
 
-	startTime := time.Date(2025, 5, 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	if lastKline.OpenTime != 0 {
 		log.Printf("find last kline [unix open time]: %d", lastKline.OpenTime)
 		startTime = time.UnixMilli(lastKline.OpenTime).Add(1 * time.Hour).UTC()
@@ -127,6 +127,7 @@ func (k *Kline) LoadKlinesForPeriod() error {
 				params := url.Values{}
 				params.Set("symbol", sbl)
 				params.Set("interval", constant.INTERVAL_KLINES)
+				params.Set("limit", constant.QUANTITY_KLINES)
 				params.Set("startTime", strconv.FormatInt(startTime.UnixMilli(), 10))
 				params.Set("endTime", strconv.FormatInt(startTime.Add(20*24*time.Hour).UnixMilli(), 10))
 
@@ -180,14 +181,13 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		inputKlines = append(inputKlines, &pbHistory.InputKline{Id: v.Id, Symbol: v.Symbol, OpenTime: v.OpenTime, OpenPrice: v.OpenPrice, HighPrice: v.HighPrice, LowPrice: v.LowPrice, ClosePrice: v.ClosePrice, Volume: v.Volume, CloseTime: v.CloseTime, QuoteAssetVolume: v.QuoteAssetVolume, NumTrades: v.NumTrades, TakerBuyBaseAssetVolume: v.TakerBuyBaseAssetVolume, TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume})
 	}
 
-	// TODO pass params to grpc from and to
 	res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{Klines: inputKlines})
 	if err != nil {
 		return nil, err
 	}
 
 	var total []entity.History
-	total = append(total, entity.History{Symbol: res.Symbol, AmountPositivePercentages: res.AmountPositivePercentages, AmountNegativePercentages: res.AmountNegativePercentages, QuantityStopMarkets: res.QuantityStopMarkets})
+	total = append(total, entity.History{Symbol: res.Symbol, SumPositivePercentageChanges: res.SumPositivePercentageChanges, CountPositiveChanges: res.CountPositiveChanges, SumNegativePercentageChanges: res.SumNegativePercentageChanges, CountNegativeChanges: res.CountNegativeChanges, CountStopMarketOrders: res.CountStopMarketOrders, CountTransactions: res.CountTransactions})
 
 	return total, nil
 }

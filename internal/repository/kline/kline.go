@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antonhancharyk/crypto-knight-history/internal/constant"
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -50,7 +51,7 @@ func (t *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 		return nil, fmt.Errorf("invalid 'to' datetime: %w", err)
 	}
 
-	fromMillis := fromTime.UnixMilli()
+	fromMillis := fromTime.Add(-constant.KLINES_BATCH_DURATION).UnixMilli()
 	toMillis := toTime.UnixMilli()
 
 	args = append(args, fromMillis, toMillis)
@@ -60,7 +61,7 @@ func (t *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 		args = append(args, params.Symbol)
 	}
 
-	query += " order by open_time asc"
+	query += " order by open_time asc, symbol asc"
 
 	err = t.db.Select(&klines, query, args...)
 

@@ -30,8 +30,11 @@ type GetKlinesQueryParams struct {
 }
 
 type History struct {
-	Symbol                    string  `json:"symbol"`
-	AmountPositivePercentages float64 `json:"amount_positive_percentages"`
-	AmountNegativePercentages float64 `json:"amount_negative_percentages"`
-	QuantityStopMarkets       float64 `json:"quantity_stop_markets"`
+	Symbol                       string  `json:"symbol"`
+	SumPositivePercentageChanges float64 `json:"sum_positive_percentage_changes"`
+	CountPositiveChanges         int32   `json:"count_positive_changes"`
+	SumNegativePercentageChanges float64 `json:"sum_negative_percentage_changes"`
+	CountNegativeChanges         int32   `json:"count_negative_changes"`
+	CountStopMarketOrders        int32   `json:"count_stop_market_orders"`
+	CountTransactions            int32   `json:"count_transactions"`
 }
