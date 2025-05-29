@@ -104,7 +104,7 @@ func (k *Kline) LoadKlinesForPeriod() error {
 		return err
 	}
 
-	startTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	if lastKline.OpenTime != 0 {
 		log.Printf("find last kline [unix open time]: %d", lastKline.OpenTime)
 		startTime = time.UnixMilli(lastKline.OpenTime).Add(1 * time.Hour).UTC()
@@ -129,7 +129,7 @@ func (k *Kline) LoadKlinesForPeriod() error {
 				params.Set("interval", constant.INTERVAL_KLINES)
 				params.Set("limit", constant.QUANTITY_KLINES)
 				params.Set("startTime", strconv.FormatInt(startTime.UnixMilli(), 10))
-				params.Set("endTime", strconv.FormatInt(startTime.Add(20*24*time.Hour).UnixMilli(), 10))
+				params.Set("endTime", strconv.FormatInt(startTime.Add(constant.KLINES_BATCH_DURATION).UnixMilli(), 10))
 
 				klns, err := k.GetBinanceKlines(params)
 				if err != nil {

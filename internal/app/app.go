@@ -36,7 +36,7 @@ func Run() {
 	defer dbClient.Close()
 
 	grpcClient := grpcClient.New()
-	err = grpcClient.Connect("localhost:50051")
+	err = grpcClient.Connect("sso-auth.site:50051")
 	if err != nil {
 		log.Fatal(err)
 	}
