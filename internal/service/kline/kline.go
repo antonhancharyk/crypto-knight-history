@@ -3,9 +3,11 @@ package kline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -104,7 +106,7 @@ func (k *Kline) LoadKlinesForPeriod() error {
 		return err
 	}
 
-	startTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	if lastKline.OpenTime != 0 {
 		log.Printf("find last kline [unix open time]: %d", lastKline.OpenTime)
 		startTime = time.UnixMilli(lastKline.OpenTime).Add(1 * time.Hour).UTC()
@@ -134,6 +136,10 @@ func (k *Kline) LoadKlinesForPeriod() error {
 				klns, err := k.GetBinanceKlines(params)
 				if err != nil {
 					log.Print(err)
+					return
+				}
+				if len(klns) == 0 {
+					log.Printf("empty klines for %s for %s-%s", sbl, startTime.String(), startTime.Add(constant.KLINES_BATCH_DURATION).String())
 					return
 				}
 
@@ -171,23 +177,129 @@ func (k *Kline) LoadKlinesForPeriod() error {
 }
 
 func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]entity.History, error) {
-	klines, err := k.GetKlines(params)
-	if err != nil {
-		return nil, err
+	var (
+		histories []entity.History
+		mu        sync.Mutex
+	)
+
+	symbols := []string{}
+	if strings.TrimSpace(params.Symbol) != "" {
+		symbols = append(symbols, params.Symbol)
+	} else {
+		symbols = constant.SYMBOLS
 	}
 
-	var inputKlines []*pbHistory.InputKline
-	for _, v := range klines {
-		inputKlines = append(inputKlines, &pbHistory.InputKline{Id: v.Id, Symbol: v.Symbol, OpenTime: v.OpenTime, OpenPrice: v.OpenPrice, HighPrice: v.HighPrice, LowPrice: v.LowPrice, ClosePrice: v.ClosePrice, Volume: v.Volume, CloseTime: v.CloseTime, QuoteAssetVolume: v.QuoteAssetVolume, NumTrades: v.NumTrades, TakerBuyBaseAssetVolume: v.TakerBuyBaseAssetVolume, TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume})
+	type symbolResult struct {
+		symbol string
+		klines []entity.Kline
+		err    error
 	}
 
-	res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{Klines: inputKlines})
-	if err != nil {
-		return nil, err
+	results := make([]symbolResult, len(symbols))
+	var wgKlines sync.WaitGroup
+
+	for i, symbol := range symbols {
+		wgKlines.Add(1)
+		go func(i int, symbol string) {
+			defer wgKlines.Done()
+
+			symbolParams := params
+			symbolParams.Symbol = symbol
+
+			klines, err := k.GetKlines(symbolParams)
+			results[i] = symbolResult{symbol: symbol, klines: klines, err: err}
+		}(i, symbol)
 	}
 
-	var total []entity.History
-	total = append(total, entity.History{Symbol: res.Symbol, SumPositivePercentageChanges: res.SumPositivePercentageChanges, CountPositiveChanges: res.CountPositiveChanges, SumNegativePercentageChanges: res.SumNegativePercentageChanges, CountNegativeChanges: res.CountNegativeChanges, CountStopMarketOrders: res.CountStopMarketOrders, CountTransactions: res.CountTransactions})
+	wgKlines.Wait()
 
-	return total, nil
+	var wgGRPC sync.WaitGroup
+
+	for _, res := range results {
+		if res.err != nil {
+			return nil, fmt.Errorf("failed to get klines for symbol %s: %w", res.symbol, res.err)
+		}
+		if len(res.klines) == 0 {
+			continue
+		}
+
+		wgGRPC.Add(1)
+		go func(symbol string, klines []entity.Kline) {
+			defer wgGRPC.Done()
+
+			var inputKlines []*pbHistory.InputKline
+			for _, v := range klines {
+				inputKlines = append(inputKlines, &pbHistory.InputKline{
+					Id:                       v.Id,
+					Symbol:                   v.Symbol,
+					OpenTime:                 v.OpenTime,
+					OpenPrice:                v.OpenPrice,
+					HighPrice:                v.HighPrice,
+					LowPrice:                 v.LowPrice,
+					ClosePrice:               v.ClosePrice,
+					Volume:                   v.Volume,
+					CloseTime:                v.CloseTime,
+					QuoteAssetVolume:         v.QuoteAssetVolume,
+					NumTrades:                v.NumTrades,
+					TakerBuyBaseAssetVolume:  v.TakerBuyBaseAssetVolume,
+					TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume,
+				})
+			}
+
+			res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{
+				Klines: inputKlines,
+			})
+			if err != nil {
+				fmt.Printf("failed to process history for %s: %v\n", symbol, err)
+				return
+			}
+
+			h := entity.History{
+				Symbol:                       res.Symbol,
+				SumPositivePercentageChanges: res.SumPositivePercentageChanges,
+				CountPositiveChanges:         res.CountPositiveChanges,
+				SumNegativePercentageChanges: res.SumNegativePercentageChanges,
+				CountNegativeChanges:         res.CountNegativeChanges,
+				CountStopMarketOrders:        res.CountStopMarketOrders,
+				CountTransactions:            res.CountTransactions,
+			}
+
+			mu.Lock()
+			histories = append(histories, h)
+			mu.Unlock()
+
+		}(res.symbol, res.klines)
+	}
+
+	wgGRPC.Wait()
+
+	var (
+		sumPositivePercentageChanges float64
+		sumNegativePercentageChanges float64
+		countPositiveChanges         int32
+		countNegativeChanges         int32
+		countStopMarketOrders        int32
+	)
+
+	for _, v := range histories {
+		sumPositivePercentageChanges += v.SumPositivePercentageChanges
+		sumNegativePercentageChanges += v.SumNegativePercentageChanges
+		countPositiveChanges += v.CountPositiveChanges
+		countNegativeChanges += v.CountNegativeChanges
+		countStopMarketOrders += v.CountStopMarketOrders
+	}
+
+	h := entity.History{
+		Symbol:                       "Total",
+		SumPositivePercentageChanges: sumPositivePercentageChanges,
+		CountPositiveChanges:         countPositiveChanges,
+		SumNegativePercentageChanges: sumNegativePercentageChanges,
+		CountNegativeChanges:         countNegativeChanges,
+		CountStopMarketOrders:        countStopMarketOrders,
+		CountTransactions:            countPositiveChanges + countNegativeChanges,
+	}
+
+	histories = append([]entity.History{h}, histories...)
+
+	return histories, nil
 }
