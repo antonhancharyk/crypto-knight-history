@@ -22,7 +22,7 @@ func (c *Client) Connect() error {
 	log.Println("DB client is connecting...")
 
 	connStr := fmt.Sprintf(
-		"user=%s dbname=%s sslmode=disable password=%s host=localhost",
+		"user=%s dbname=%s sslmode=disable password=%s host=db",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_NAME"),
 		os.Getenv("DB_PASSWORD"),
