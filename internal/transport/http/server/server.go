@@ -29,7 +29,7 @@ func New(svc *service.Service) *HTTPServer {
 	mux.HandleFunc("/history", s.handleHistory)
 
 	s.server = &http.Server{
-		Addr:    ":" + os.Getenv("SERVER_PORT"),
+		Addr:    ":" + os.Getenv("APP_SERVER_PORT"),
 		Handler: mux,
 	}
 
