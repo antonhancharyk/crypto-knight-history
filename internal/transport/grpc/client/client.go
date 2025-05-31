@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	pbHistory "github.com/antongoncharik/crypto-knight-protos/gen/go/history"
@@ -18,13 +19,13 @@ func New() *Client {
 	return &Client{}
 }
 
-func (c *Client) Connect(addr string) error {
+func (c *Client) Connect() error {
 	log.Println("gRPC client is connecting...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, addr,
+	conn, err := grpc.DialContext(ctx, os.Getenv("GRPC_HOST"),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)

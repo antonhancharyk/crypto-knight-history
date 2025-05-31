@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
@@ -17,7 +18,7 @@ type HTTPServer struct {
 	svc    *service.Service
 }
 
-func New(addr string, svc *service.Service) *HTTPServer {
+func New(svc *service.Service) *HTTPServer {
 	s := &HTTPServer{svc: svc}
 
 	mux := http.NewServeMux()
@@ -28,7 +29,7 @@ func New(addr string, svc *service.Service) *HTTPServer {
 	mux.HandleFunc("/history", s.handleHistory)
 
 	s.server = &http.Server{
-		Addr:    addr,
+		Addr:    ":" + os.Getenv("SERVER_PORT"),
 		Handler: mux,
 	}
 

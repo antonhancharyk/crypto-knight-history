@@ -7,8 +7,8 @@ services:
     env_file:
       - .env
     restart: always
-    ports:
-      - "5432:5432"
+    expose:
+      - "${DB_PORT}"
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -31,7 +31,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: -path=/migrations -database postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable up
+    command: -path=/migrations -database postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable up
 
   app:
     container_name: app
@@ -45,7 +45,7 @@ services:
       migrator:
         condition: service_completed_successfully
     expose:
-      - "8080"
+      - "${SERVER_PORT}"
 
   nginx:
     container_name: nginx

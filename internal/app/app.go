@@ -36,7 +36,7 @@ func Run() {
 	defer dbClient.Close()
 
 	grpcClient := grpcClient.New()
-	err = grpcClient.Connect("sso-auth.site:50051")
+	err = grpcClient.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func Run() {
 	repo := repository.New(dbClient.DB)
 	svc := service.New(repo, httpClient, grpcClient)
 
-	httpServer := server.New(":8080", svc)
+	httpServer := server.New(svc)
 	go func() {
 		err := httpServer.Start()
 		if err != nil && err != http.ErrServerClosed {

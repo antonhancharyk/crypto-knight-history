@@ -44,7 +44,6 @@ func (c *HTTPClient) Get(url string) ([]byte, error) {
 		}
 
 		req.Header.Set("Content-Type", "application/json")
-		// req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_PUBLIC_API_KEY"))
 
 		res, err := c.client.Do(req)
 		if err != nil {
@@ -96,7 +95,6 @@ func (c *HTTPClient) Post(url string, body []byte) ([]byte, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_PUBLIC_API_KEY"))
 
 	res, err := c.client.Do(req)
 	if err != nil {
@@ -123,7 +121,6 @@ func (c *HTTPClient) Delete(url string) ([]byte, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("X-MBX-APIKEY", os.Getenv("BINANCE_PUBLIC_API_KEY"))
 
 	res, err := c.client.Do(req)
 	if err != nil {
