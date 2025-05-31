@@ -38,6 +38,8 @@ services:
     image: antgoncharik/crypto-knight-history
     env_file:
       - .env
+    volumes:
+      - .env:/opt/app/.env:ro
     restart: always
     depends_on:
       migrator:
