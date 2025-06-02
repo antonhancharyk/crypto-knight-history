@@ -26,7 +26,7 @@ type MapKlines map[string][]Kline
 type GetKlinesQueryParams struct {
 	From   string `form:"from"`
 	To     string `form:"to"`
-	Symbol string `form:"symbol"`
+	Symbol string `form:"symbol,omitempty"`
 }
 
 type History struct {

@@ -58,11 +58,13 @@ func (q *TaskQueue) worker() {
 		}
 		task := val.(*entity.Task)
 		task.Status = entity.StatusRunning
+		task.StartAt = time.Now().UTC()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
-
 		result, err := q.klineSvc.ProcessHistory(ctx, task.Params)
 		cancel()
+
+		task.EndAt = time.Now().UTC()
 
 		if err != nil {
 			task.Status = entity.StatusFailed

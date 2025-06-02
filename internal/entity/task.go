@@ -1,5 +1,7 @@
 package entity
 
+import "time"
+
 type TaskStatus string
 
 const (
@@ -10,9 +12,11 @@ const (
 )
 
 type Task struct {
-	ID     string               `json:"id"`
-	Params GetKlinesQueryParams `json:"params"`
-	Status TaskStatus           `json:"status"`
-	Result []History            `json:"result,omitempty"`
-	Error  string               `json:"error,omitempty"`
+	ID      string               `json:"id"`
+	Params  GetKlinesQueryParams `json:"params"`
+	Status  TaskStatus           `json:"status"`
+	StartAt time.Time            `json:"start_at,omitempty"`
+	EndAt   time.Time            `json:"end_at,omitempty"`
+	Result  []History            `json:"result,omitempty"`
+	Error   string               `json:"error,omitempty"`
 }
