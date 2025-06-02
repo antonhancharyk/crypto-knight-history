@@ -30,6 +30,8 @@ func New(klineSvc *kline.Kline) *TaskQueue {
 }
 
 func (q *TaskQueue) CreateTask(params entity.GetKlinesQueryParams) *entity.Task {
+	// mem is low
+	q.tasks.Clear()
 	id := uuid.New().String()
 	task := &entity.Task{
 		ID:     id,

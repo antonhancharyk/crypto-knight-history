@@ -191,7 +191,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		results[kline.Symbol] = append(results[kline.Symbol], kline)
 	}
 
-	// sem := make(chan struct{}, 10)
+	sem := make(chan struct{}, 10)
 	var wgGRPC sync.WaitGroup
 	for resSymbol, resKlines := range results {
 		if len(resKlines) == 0 {
@@ -202,8 +202,8 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		go func(symbol string, klines []entity.Kline) {
 			defer wgGRPC.Done()
 
-			// sem <- struct{}{}
-			// defer func() { <-sem }()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
 			var inputKlines []*pbHistory.InputKline
 			for _, v := range klines {
