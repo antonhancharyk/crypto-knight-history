@@ -71,5 +71,10 @@ func (q *TaskQueue) worker() {
 			task.Status = entity.StatusCompleted
 			task.Result = result
 		}
+
+		go func() {
+			time.Sleep(1 * time.Hour)
+			q.tasks.Delete(task.ID)
+		}()
 	}
 }
