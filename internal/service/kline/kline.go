@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -182,44 +181,19 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		mu        sync.Mutex
 	)
 
-	symbols := []string{}
-	if strings.TrimSpace(params.Symbol) != "" {
-		symbols = append(symbols, params.Symbol)
-	} else {
-		symbols = constant.SYMBOLS
+	klines, err := k.GetKlines(params)
+	if err != nil {
+		return nil, err
 	}
 
-	type symbolResult struct {
-		symbol string
-		klines []entity.Kline
-		err    error
+	results := make(map[string][]entity.Kline)
+	for _, kline := range klines {
+		results[kline.Symbol] = append(results[kline.Symbol], kline)
 	}
-
-	results := make([]symbolResult, len(symbols))
-	var wgKlines sync.WaitGroup
-
-	for i, symbol := range symbols {
-		wgKlines.Add(1)
-		go func(i int, symbol string) {
-			defer wgKlines.Done()
-
-			symbolParams := params
-			symbolParams.Symbol = symbol
-
-			klines, err := k.GetKlines(symbolParams)
-			results[i] = symbolResult{symbol: symbol, klines: klines, err: err}
-		}(i, symbol)
-	}
-
-	wgKlines.Wait()
 
 	var wgGRPC sync.WaitGroup
-
-	for _, res := range results {
-		if res.err != nil {
-			return nil, fmt.Errorf("failed to get klines for symbol %s: %w", res.symbol, res.err)
-		}
-		if len(res.klines) == 0 {
+	for resSymbol, resKlines := range results {
+		if len(resKlines) == 0 {
 			continue
 		}
 
@@ -268,9 +242,8 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 			histories = append(histories, h)
 			mu.Unlock()
 
-		}(res.symbol, res.klines)
+		}(resSymbol, resKlines)
 	}
-
 	wgGRPC.Wait()
 
 	var (
