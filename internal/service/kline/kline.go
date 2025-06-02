@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	pbHistory "github.com/antongoncharik/crypto-knight-protos/gen/go/history"
 	"github.com/antonhancharyk/crypto-knight-history/internal/constant"
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
 	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
@@ -178,101 +177,111 @@ func (k *Kline) LoadKlinesForPeriod() error {
 func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]entity.History, error) {
 	var (
 		histories []entity.History
-		mu        sync.Mutex
+		// mu        sync.Mutex
 	)
+
+	fmt.Println(time.Now().UTC().String())
 
 	klines, err := k.GetKlines(params)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println(time.Now().UTC().String())
+
 	results := make(map[string][]entity.Kline)
 	for _, kline := range klines {
 		results[kline.Symbol] = append(results[kline.Symbol], kline)
 	}
 
-	var wgGRPC sync.WaitGroup
-	for resSymbol, resKlines := range results {
-		if len(resKlines) == 0 {
-			continue
-		}
+	fmt.Println(time.Now().UTC().String())
 
-		wgGRPC.Add(1)
-		go func(symbol string, klines []entity.Kline) {
-			defer wgGRPC.Done()
+	// sem := make(chan struct{}, 10)
+	// var wgGRPC sync.WaitGroup
+	// for resSymbol, resKlines := range results {
+	// 	if len(resKlines) == 0 {
+	// 		continue
+	// 	}
 
-			var inputKlines []*pbHistory.InputKline
-			for _, v := range klines {
-				inputKlines = append(inputKlines, &pbHistory.InputKline{
-					Id:                       v.Id,
-					Symbol:                   v.Symbol,
-					OpenTime:                 v.OpenTime,
-					OpenPrice:                v.OpenPrice,
-					HighPrice:                v.HighPrice,
-					LowPrice:                 v.LowPrice,
-					ClosePrice:               v.ClosePrice,
-					Volume:                   v.Volume,
-					CloseTime:                v.CloseTime,
-					QuoteAssetVolume:         v.QuoteAssetVolume,
-					NumTrades:                v.NumTrades,
-					TakerBuyBaseAssetVolume:  v.TakerBuyBaseAssetVolume,
-					TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume,
-				})
-			}
+	// 	wgGRPC.Add(1)
+	// 	go func(symbol string, klines []entity.Kline) {
+	// 		defer wgGRPC.Done()
 
-			res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{
-				Klines: inputKlines,
-			})
-			if err != nil {
-				fmt.Printf("failed to process history for %s: %v\n", symbol, err)
-				return
-			}
+	// sem <- struct{}{}
+	// defer func() { <-sem }()
 
-			h := entity.History{
-				Symbol:                       res.Symbol,
-				SumPositivePercentageChanges: res.SumPositivePercentageChanges,
-				CountPositiveChanges:         res.CountPositiveChanges,
-				SumNegativePercentageChanges: res.SumNegativePercentageChanges,
-				CountNegativeChanges:         res.CountNegativeChanges,
-				CountStopMarketOrders:        res.CountStopMarketOrders,
-				CountTransactions:            res.CountTransactions,
-			}
+	// 		var inputKlines []*pbHistory.InputKline
+	// 		for _, v := range klines {
+	// 			inputKlines = append(inputKlines, &pbHistory.InputKline{
+	// 				Id:                       v.Id,
+	// 				Symbol:                   v.Symbol,
+	// 				OpenTime:                 v.OpenTime,
+	// 				OpenPrice:                v.OpenPrice,
+	// 				HighPrice:                v.HighPrice,
+	// 				LowPrice:                 v.LowPrice,
+	// 				ClosePrice:               v.ClosePrice,
+	// 				Volume:                   v.Volume,
+	// 				CloseTime:                v.CloseTime,
+	// 				QuoteAssetVolume:         v.QuoteAssetVolume,
+	// 				NumTrades:                v.NumTrades,
+	// 				TakerBuyBaseAssetVolume:  v.TakerBuyBaseAssetVolume,
+	// 				TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume,
+	// 			})
+	// 		}
 
-			mu.Lock()
-			histories = append(histories, h)
-			mu.Unlock()
+	// 		res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{
+	// 			Klines: inputKlines,
+	// 		})
+	// 		if err != nil {
+	// 			fmt.Printf("failed to process history for %s: %v\n", symbol, err)
+	// 			return
+	// 		}
 
-		}(resSymbol, resKlines)
-	}
-	wgGRPC.Wait()
+	// 		h := entity.History{
+	// 			Symbol:                       res.Symbol,
+	// 			SumPositivePercentageChanges: res.SumPositivePercentageChanges,
+	// 			CountPositiveChanges:         res.CountPositiveChanges,
+	// 			SumNegativePercentageChanges: res.SumNegativePercentageChanges,
+	// 			CountNegativeChanges:         res.CountNegativeChanges,
+	// 			CountStopMarketOrders:        res.CountStopMarketOrders,
+	// 			CountTransactions:            res.CountTransactions,
+	// 		}
 
-	var (
-		sumPositivePercentageChanges float64
-		sumNegativePercentageChanges float64
-		countPositiveChanges         int32
-		countNegativeChanges         int32
-		countStopMarketOrders        int32
-	)
+	// 		mu.Lock()
+	// 		histories = append(histories, h)
+	// 		mu.Unlock()
 
-	for _, v := range histories {
-		sumPositivePercentageChanges += v.SumPositivePercentageChanges
-		sumNegativePercentageChanges += v.SumNegativePercentageChanges
-		countPositiveChanges += v.CountPositiveChanges
-		countNegativeChanges += v.CountNegativeChanges
-		countStopMarketOrders += v.CountStopMarketOrders
-	}
+	// 	}(resSymbol, resKlines)
+	// }
+	// wgGRPC.Wait()
 
-	h := entity.History{
-		Symbol:                       "Total",
-		SumPositivePercentageChanges: sumPositivePercentageChanges,
-		CountPositiveChanges:         countPositiveChanges,
-		SumNegativePercentageChanges: sumNegativePercentageChanges,
-		CountNegativeChanges:         countNegativeChanges,
-		CountStopMarketOrders:        countStopMarketOrders,
-		CountTransactions:            countPositiveChanges + countNegativeChanges,
-	}
+	// var (
+	// 	sumPositivePercentageChanges float64
+	// 	sumNegativePercentageChanges float64
+	// 	countPositiveChanges         int32
+	// 	countNegativeChanges         int32
+	// 	countStopMarketOrders        int32
+	// )
 
-	histories = append([]entity.History{h}, histories...)
+	// for _, v := range histories {
+	// 	sumPositivePercentageChanges += v.SumPositivePercentageChanges
+	// 	sumNegativePercentageChanges += v.SumNegativePercentageChanges
+	// 	countPositiveChanges += v.CountPositiveChanges
+	// 	countNegativeChanges += v.CountNegativeChanges
+	// 	countStopMarketOrders += v.CountStopMarketOrders
+	// }
+
+	// h := entity.History{
+	// 	Symbol:                       "Total",
+	// 	SumPositivePercentageChanges: sumPositivePercentageChanges,
+	// 	CountPositiveChanges:         countPositiveChanges,
+	// 	SumNegativePercentageChanges: sumNegativePercentageChanges,
+	// 	CountNegativeChanges:         countNegativeChanges,
+	// 	CountStopMarketOrders:        countStopMarketOrders,
+	// 	CountTransactions:            countPositiveChanges + countNegativeChanges,
+	// }
+
+	// histories = append([]entity.History{h}, histories...)
 
 	return histories, nil
 }
