@@ -15,7 +15,6 @@ import (
 type HTTPServer struct {
 	server *http.Server
 	svc    *service.Service
-	// queue  *queue.TaskQueue
 }
 
 func New(svc *service.Service) *HTTPServer {
@@ -25,6 +24,7 @@ func New(svc *service.Service) *HTTPServer {
 	mux.HandleFunc("/healthz", s.handleHealth)
 	mux.HandleFunc("/task", s.handleCreateTask)
 	mux.HandleFunc("/task/status", s.handleTaskStatus)
+	mux.HandleFunc("/klines", s.handleGetKlines)
 
 	s.server = &http.Server{
 		Addr:    ":" + os.Getenv("APP_SERVER_PORT"),
@@ -85,4 +85,21 @@ func (s *HTTPServer) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
+}
+
+func (s *HTTPServer) handleGetKlines(w http.ResponseWriter, r *http.Request) {
+	params := entity.GetKlinesQueryParams{
+		From:   r.URL.Query().Get("from"),
+		To:     r.URL.Query().Get("to"),
+		Symbol: r.URL.Query().Get("symbol"),
+	}
+
+	klines, err := s.svc.Kline.GetKlines(params)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(klines)
 }
