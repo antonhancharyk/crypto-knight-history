@@ -247,6 +247,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				SumNegativePercentageChanges: res.SumNegativePercentageChanges,
 				CountNegativeChanges:         res.CountNegativeChanges,
 				CountStopMarketOrders:        res.CountStopMarketOrders,
+				CountZeroStopMarketOrders:    res.CountZeroStopMarketOrders,
 				CountTransactions:            res.CountTransactions,
 				Grade:                        res.SumPositivePercentageChanges - res.SumNegativePercentageChanges - (float64(res.CountStopMarketOrders * 10)),
 				Conditions:                   conditions,
@@ -266,6 +267,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		countPositiveChanges         int32
 		countNegativeChanges         int32
 		countStopMarketOrders        int32
+		countZeroStopMarketOrders    int32
 		grade                        float64
 	)
 
@@ -276,6 +278,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		countPositiveChanges += v.CountPositiveChanges
 		countNegativeChanges += v.CountNegativeChanges
 		countStopMarketOrders += v.CountStopMarketOrders
+		countZeroStopMarketOrders += v.CountZeroStopMarketOrders
 		grade += v.Grade
 
 		for kk, vv := range v.Conditions {
@@ -295,6 +298,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		SumNegativePercentageChanges: sumNegativePercentageChanges,
 		CountNegativeChanges:         countNegativeChanges,
 		CountStopMarketOrders:        countStopMarketOrders,
+		CountZeroStopMarketOrders:    countZeroStopMarketOrders,
 		CountTransactions:            countPositiveChanges + countNegativeChanges,
 		Grade:                        grade,
 		Conditions:                   conditions,
