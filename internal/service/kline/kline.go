@@ -7,6 +7,7 @@ import (
 	"log"
 	"maps"
 	"net/url"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -290,6 +291,10 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 			}
 		}
 	}
+
+	sort.Slice(histories, func(i, j int) bool {
+		return histories[i].Grade < histories[j].Grade
+	})
 
 	h := entity.History{
 		Symbol:                       "Total",
