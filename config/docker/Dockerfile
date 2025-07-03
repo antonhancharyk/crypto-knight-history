@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o crypto-knight-history cmd/cmd.go
+RUN go build -o crypto-knight-history cmd/main.go
 
 FROM alpine:latest
 
