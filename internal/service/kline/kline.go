@@ -242,16 +242,17 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				maps.Copy(conditions[k], v.V)
 			}
 			h := entity.History{
-				Symbol:                       res.Symbol,
-				SumPositivePercentageChanges: res.SumPositivePercentageChanges,
-				CountPositiveChanges:         res.CountPositiveChanges,
-				SumNegativePercentageChanges: res.SumNegativePercentageChanges,
-				CountNegativeChanges:         res.CountNegativeChanges,
-				CountStopMarketOrders:        res.CountStopMarketOrders,
-				CountZeroStopMarketOrders:    res.CountZeroStopMarketOrders,
-				CountTransactions:            res.CountTransactions,
-				Grade:                        res.SumPositivePercentageChanges - res.SumNegativePercentageChanges - (float64(res.CountStopMarketOrders * 10)),
-				Conditions:                   conditions,
+				Symbol:                              res.Symbol,
+				SumPositivePercentageChanges:        res.SumPositivePercentageChanges,
+				CountPositiveChanges:                res.CountPositiveChanges,
+				SumNegativePercentageChanges:        res.SumNegativePercentageChanges,
+				CountNegativeChanges:                res.CountNegativeChanges,
+				CountStopMarketOrders:               res.CountStopMarketOrders,
+				CountZeroStopMarketOrders:           res.CountZeroStopMarketOrders,
+				CountTransactions:                   res.CountTransactions,
+				Grade:                               res.SumPositivePercentageChanges - res.SumNegativePercentageChanges - (float64(res.CountStopMarketOrders * 10)) - res.SumIncomplitedStopPercentageChanges,
+				Conditions:                          conditions,
+				SumIncomplitedStopPercentageChanges: res.SumIncomplitedStopPercentageChanges,
 			}
 
 			mu.Lock()
@@ -263,13 +264,14 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 	wgGRPC.Wait()
 
 	var (
-		sumPositivePercentageChanges float64
-		sumNegativePercentageChanges float64
-		countPositiveChanges         int32
-		countNegativeChanges         int32
-		countStopMarketOrders        int32
-		countZeroStopMarketOrders    int32
-		grade                        float64
+		sumPositivePercentageChanges        float64
+		sumNegativePercentageChanges        float64
+		sumIncomplitedStopPercentageChanges float64
+		countPositiveChanges                int32
+		countNegativeChanges                int32
+		countStopMarketOrders               int32
+		countZeroStopMarketOrders           int32
+		grade                               float64
 	)
 
 	conditions := make(map[string]map[string]int32)
@@ -280,6 +282,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		countNegativeChanges += v.CountNegativeChanges
 		countStopMarketOrders += v.CountStopMarketOrders
 		countZeroStopMarketOrders += v.CountZeroStopMarketOrders
+		sumIncomplitedStopPercentageChanges += v.SumIncomplitedStopPercentageChanges
 		grade += v.Grade
 
 		for kk, vv := range v.Conditions {
@@ -297,16 +300,17 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 	})
 
 	h := entity.History{
-		Symbol:                       "Total",
-		SumPositivePercentageChanges: sumPositivePercentageChanges,
-		CountPositiveChanges:         countPositiveChanges,
-		SumNegativePercentageChanges: sumNegativePercentageChanges,
-		CountNegativeChanges:         countNegativeChanges,
-		CountStopMarketOrders:        countStopMarketOrders,
-		CountZeroStopMarketOrders:    countZeroStopMarketOrders,
-		CountTransactions:            countPositiveChanges + countNegativeChanges,
-		Grade:                        grade,
-		Conditions:                   conditions,
+		Symbol:                              "Total",
+		SumPositivePercentageChanges:        sumPositivePercentageChanges,
+		CountPositiveChanges:                countPositiveChanges,
+		SumNegativePercentageChanges:        sumNegativePercentageChanges,
+		CountNegativeChanges:                countNegativeChanges,
+		CountStopMarketOrders:               countStopMarketOrders,
+		CountZeroStopMarketOrders:           countZeroStopMarketOrders,
+		SumIncomplitedStopPercentageChanges: sumIncomplitedStopPercentageChanges,
+		CountTransactions:                   countPositiveChanges + countNegativeChanges,
+		Grade:                               grade,
+		Conditions:                          conditions,
 	}
 
 	histories = append([]entity.History{h}, histories...)
