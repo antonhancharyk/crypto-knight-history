@@ -63,6 +63,7 @@ func Run() {
 	go func() {
 		for {
 			utilities.SleepUntilNextHour()
+			time.Sleep(1 * time.Minute)
 			err := svc.Kline.LoadKlinesForPeriod()
 			if err != nil {
 				log.Print(err)
