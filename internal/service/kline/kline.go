@@ -107,7 +107,7 @@ func (k *Kline) LoadKlinesForPeriod() error {
 		return err
 	}
 
-	startTime := time.Date(2018, 1, 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	if lastKline.OpenTime != 0 {
 		log.Printf("find last kline [unix open time]: %d", lastKline.OpenTime)
 		startTime = time.UnixMilli(lastKline.OpenTime).Add(1 * time.Hour).UTC()
