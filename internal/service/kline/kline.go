@@ -193,7 +193,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		results[kline.Symbol] = append(results[kline.Symbol], kline)
 	}
 
-	sem := make(chan struct{}, 10)
+	sem := make(chan struct{}, 5)
 	var wgGRPC sync.WaitGroup
 	for resSymbol, resKlines := range results {
 		if len(resKlines) == 0 {
