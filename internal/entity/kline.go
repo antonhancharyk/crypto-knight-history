@@ -36,8 +36,8 @@ type History struct {
 	SumNegativePercentageChanges        float64                     `json:"sum_negative_percentage_changes"`
 	CountNegativeChanges                int32                       `json:"count_negative_changes"`
 	CountStopMarketOrders               int32                       `json:"count_stop_market_orders"`
-	CountZeroStopMarketOrders           int32                       `json:"count_zero_stop_market_orders"`
 	SumIncomplitedStopPercentageChanges float64                     `json:"sum_incomplited_stop_percentage_changes"`
+	CountIncomplitedStop                int32                       `json:"count_incomplited_stop"`
 	CountTransactions                   int32                       `json:"count_transactions"`
 	Grade                               float64                     `json:"grade"`
 	Conditions                          map[string]map[string]int32 `json:"conditions"`

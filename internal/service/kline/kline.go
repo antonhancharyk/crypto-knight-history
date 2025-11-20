@@ -248,7 +248,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				SumNegativePercentageChanges:        res.SumNegativePercentageChanges,
 				CountNegativeChanges:                res.CountNegativeChanges,
 				CountStopMarketOrders:               res.CountStopMarketOrders,
-				CountZeroStopMarketOrders:           res.CountZeroStopMarketOrders,
+				CountIncomplitedStop:                res.CountIncomplitedStop,
 				CountTransactions:                   res.CountTransactions,
 				Grade:                               res.SumPositivePercentageChanges - res.SumNegativePercentageChanges - (float64(res.CountStopMarketOrders * 10)) - res.SumIncomplitedStopPercentageChanges,
 				Conditions:                          conditions,
@@ -270,7 +270,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		countPositiveChanges                int32
 		countNegativeChanges                int32
 		countStopMarketOrders               int32
-		countZeroStopMarketOrders           int32
+		countIncomplitedStop                int32
 		grade                               float64
 	)
 
@@ -281,7 +281,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		countPositiveChanges += v.CountPositiveChanges
 		countNegativeChanges += v.CountNegativeChanges
 		countStopMarketOrders += v.CountStopMarketOrders
-		countZeroStopMarketOrders += v.CountZeroStopMarketOrders
+		countIncomplitedStop += v.CountIncomplitedStop
 		sumIncomplitedStopPercentageChanges += v.SumIncomplitedStopPercentageChanges
 		grade += v.Grade
 
@@ -306,8 +306,8 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		SumNegativePercentageChanges:        sumNegativePercentageChanges,
 		CountNegativeChanges:                countNegativeChanges,
 		CountStopMarketOrders:               countStopMarketOrders,
-		CountZeroStopMarketOrders:           countZeroStopMarketOrders,
 		SumIncomplitedStopPercentageChanges: sumIncomplitedStopPercentageChanges,
+		CountIncomplitedStop:                countIncomplitedStop,
 		CountTransactions:                   countPositiveChanges + countNegativeChanges,
 		Grade:                               grade,
 		Conditions:                          conditions,

@@ -1,13 +1,9 @@
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
-github.com/antongoncharik/crypto-knight-protos v1.1.4 h1:SMA8s/Au5v1YJNHhx4joInT5TkhUcgsPcxj3eoi/Z0o=
-github.com/antongoncharik/crypto-knight-protos v1.1.4/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
-github.com/antongoncharik/crypto-knight-protos v1.1.6 h1:CWcEeA+3hb2FGZwKZIG44FBFME28O05NPY3+TKbgj60=
-github.com/antongoncharik/crypto-knight-protos v1.1.6/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
-github.com/antongoncharik/crypto-knight-protos v1.1.7 h1:58cZLNdKrdxqYIcr46qfQmzGPh99bNKJr89CdyT5ayg=
-github.com/antongoncharik/crypto-knight-protos v1.1.7/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
 github.com/antongoncharik/crypto-knight-protos v1.1.8 h1:+iDYGbeq6CxxPyLfkA0u2wAu43K9XyDCr6VFC5putGg=
 github.com/antongoncharik/crypto-knight-protos v1.1.8/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
+github.com/antongoncharik/crypto-knight-protos v1.1.9 h1:vdFz5fSuMk+OxJpzu1DkRdcEG71D7b58ECRsaGGa958=
+github.com/antongoncharik/crypto-knight-protos v1.1.9/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
