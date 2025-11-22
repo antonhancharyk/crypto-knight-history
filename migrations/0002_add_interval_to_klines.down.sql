@@ -1,0 +1,1 @@
+ALTER TABLE klines DROP COLUMN interval;

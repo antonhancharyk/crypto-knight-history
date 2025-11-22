@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -35,8 +34,6 @@ func New(svc *service.Service) *HTTPServer {
 }
 
 func (s *HTTPServer) Start() error {
-	log.Printf("HTTP server is starting on %s...", s.server.Addr)
-
 	ln, err := net.Listen("tcp", s.server.Addr)
 	if err != nil {
 		return err
@@ -46,7 +43,6 @@ func (s *HTTPServer) Start() error {
 }
 
 func (s *HTTPServer) Shutdown(ctx context.Context) error {
-	log.Println("shutting down HTTP server...")
 	return s.server.Shutdown(ctx)
 }
 

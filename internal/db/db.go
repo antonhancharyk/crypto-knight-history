@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -19,8 +18,6 @@ func New() *Client {
 }
 
 func (c *Client) Connect() error {
-	log.Println("DB client is connecting...")
-
 	connStr := fmt.Sprintf(
 		"user=%s dbname=%s sslmode=disable password=%s host=%s port=%s",
 		os.Getenv("DB_USER"),
@@ -51,7 +48,6 @@ func (c *Client) Connect() error {
 
 func (c *Client) Close() error {
 	if c.DB != nil {
-		log.Println("shutting down DB client connection...")
 		return c.DB.Close()
 	}
 

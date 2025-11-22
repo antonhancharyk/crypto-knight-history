@@ -8,7 +8,7 @@ import (
 
 type Kline interface {
 	GetKlines(getKlinesQueryParams entity.GetKlinesQueryParams) ([]entity.Kline, error)
-	GetLastKline() (entity.Kline, error)
+	GetLastKlineByInterval(interval string) (entity.Kline, error)
 	CreateBulk(klines []entity.Kline) error
 }
 

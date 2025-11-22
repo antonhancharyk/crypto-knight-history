@@ -1,16 +1,16 @@
-create table if not exists klines (
-    id serial primary key,
-    created_at timestamp not null default current_timestamp,
-    symbol text not null,
-    open_time bigint not null,
-    open_price double precision not null,
-    high_price double precision not null,
-    low_price double precision not null,
-    close_price double precision not null,
-    volume double precision not null,
-    close_time bigint not null,
-    quote_asset_volume double precision not null,
-    num_trades bigint not null,
-    taker_buy_base_asset_volume double precision not null,
-    taker_buy_quote_asset_volume double precision not null
+CREATE TABLE IF NOT EXISTS klines (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    symbol TEXT NOT NULL,
+    open_time BIGINT NOT NULL,
+    open_price DOUBLE PRECISION NOT NULL,
+    high_price DOUBLE PRECISION NOT NULL,
+    low_price DOUBLE PRECISION NOT NULL,
+    close_price DOUBLE PRECISION NOT NULL,
+    volume DOUBLE PRECISION NOT NULL,
+    close_time BIGINT NOT NULL,
+    quote_asset_volume DOUBLE PRECISION NOT NULL,
+    num_trades BIGINT NOT NULL,
+    taker_buy_base_asset_volume DOUBLE PRECISION NOT NULL,
+    taker_buy_quote_asset_volume DOUBLE PRECISION NOT NULL
 );

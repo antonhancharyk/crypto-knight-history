@@ -35,10 +35,6 @@ func (k *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 	return k.repo.Kline.GetKlines(params)
 }
 
-func (k *Kline) GetLastKline() (entity.Kline, error) {
-	return k.repo.Kline.GetLastKline()
-}
-
 func (k *Kline) GetBinanceKlines(params url.Values) ([]entity.Kline, error) {
 	sbl := params.Get("symbol")
 
@@ -53,13 +49,8 @@ func (k *Kline) GetBinanceKlines(params url.Values) ([]entity.Kline, error) {
 		return nil, err
 	}
 
-	lstIdx := len(data) - 1
 	klinesBySymbol := []entity.Kline{}
-	for k, v := range data {
-		if k == lstIdx {
-			break
-		}
-
+	for _, v := range data {
 		openTime := int64(v[0].(float64))
 		openTimeUTC := utilities.FromUnixToUTC(openTime)
 		openPrice, _ := strconv.ParseFloat(v[1].(string), 64)
@@ -101,76 +92,91 @@ func (k *Kline) CreateBulk(klines []entity.Kline) error {
 	return k.repo.Kline.CreateBulk(klines)
 }
 
-func (k *Kline) LoadKlinesForPeriod() error {
-	lastKline, err := k.GetLastKline()
+func (k *Kline) LoadInterval(interval string) error {
+	last, err := k.repo.Kline.GetLastKlineByInterval(interval)
 	if err != nil {
 		return err
 	}
 
+	step := intervalDuration(interval)
+
 	startTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	if lastKline.OpenTime != 0 {
-		log.Printf("find last kline [unix open time]: %d", lastKline.OpenTime)
-		startTime = time.UnixMilli(lastKline.OpenTime).Add(1 * time.Hour).UTC()
-	} else {
-		log.Printf("last kline is empty [unix start time]: %d", startTime.UnixMilli())
+	if last.OpenTime != 0 {
+		startTime = time.UnixMilli(last.OpenTime).Add(step).UTC()
 	}
+
 	now := time.Now().UTC()
-	endTime := now.Truncate(time.Hour)
+	limitTime := now.Truncate(step)
 
-	var wg sync.WaitGroup
-
-	for startTime.Before(endTime) {
-		klines := make([][]entity.Kline, 0, len(constant.SYMBOLS))
+	for startTime.Before(limitTime) {
+		var wg sync.WaitGroup
 		var mu sync.Mutex
+
+		klines := make([][]entity.Kline, 0, len(constant.SYMBOLS))
+		endTime := startTime.Add(498 * step)
+
 		wg.Add(len(constant.SYMBOLS))
-		for _, symbol := range constant.SYMBOLS {
-			go func(sbl string) {
+		for _, sbl := range constant.SYMBOLS {
+			go func(symbol string) {
 				defer wg.Done()
 
 				params := url.Values{}
-				params.Set("symbol", sbl)
-				params.Set("interval", constant.INTERVAL_KLINES)
-				params.Set("limit", constant.QUANTITY_KLINES)
+				params.Set("symbol", symbol)
+				params.Set("interval", interval)
+				params.Set("limit", "499")
 				params.Set("startTime", strconv.FormatInt(startTime.UnixMilli(), 10))
-				params.Set("endTime", strconv.FormatInt(startTime.Add(constant.KLINES_BATCH_DURATION).UnixMilli(), 10))
+				params.Set("endTime", strconv.FormatInt(endTime.UnixMilli(), 10))
 
-				klns, err := k.GetBinanceKlines(params)
+				data, err := k.GetBinanceKlines(params)
 				if err != nil {
-					log.Print(err)
-					return
-				}
-				if len(klns) == 0 {
-					log.Printf("empty klines for %s for %s-%s", sbl, startTime.String(), startTime.Add(constant.KLINES_BATCH_DURATION).String())
+					log.Printf("[%s] %v", symbol, err)
 					return
 				}
 
-				mu.Lock()
-				klines = append(klines, klns)
-				mu.Unlock()
-			}(symbol)
+				for i := range data {
+					data[i].Interval = interval
+				}
+
+				if len(data) > 0 {
+					mu.Lock()
+					klines = append(klines, data)
+					mu.Unlock()
+				}
+
+			}(sbl)
 		}
 		wg.Wait()
 
-		wg.Add(len(klines))
-		for _, v := range klines {
-			go func(kl []entity.Kline) {
-				defer wg.Done()
+		if len(klines) == 0 {
+			log.Printf("no klines for interval=%s starting from %s to %s", interval, startTime, endTime)
+			startTime = startTime.Add(499 * step)
+			time.Sleep(15 * time.Second)
+			continue
+		}
 
-				err := k.CreateBulk(kl)
+		wg.Add(len(klines))
+		for _, arr := range klines {
+			go func(kls []entity.Kline) {
+				defer wg.Done()
+				err := k.CreateBulk(kls)
 				if err != nil {
 					log.Print(err)
-					return
 				}
-			}(v)
+			}(arr)
 		}
 		wg.Wait()
 
 		if len(klines) > 0 && len(klines[0]) > 0 {
-			log.Printf("add new klines [quantity]: %d, [unix open time from]: %d, [unix open time to]: %d",
-				len(klines[0]), klines[0][0].OpenTime, klines[0][len(klines[0])-1].OpenTime)
+			log.Printf(
+				"added interval=%s from %s to %s",
+				interval,
+				startTime.Format(time.RFC3339),
+				endTime.Format(time.RFC3339),
+			)
 		}
 
-		startTime = startTime.Add(constant.KLINES_BATCH_DURATION)
+		startTime = startTime.Add(499 * step)
+
 		time.Sleep(15 * time.Second)
 	}
 
@@ -316,4 +322,21 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 	histories = append([]entity.History{h}, histories...)
 
 	return histories, nil
+}
+
+func intervalDuration(interval string) time.Duration {
+	switch interval {
+	case "15m":
+		return 15 * time.Minute
+	case "30m":
+		return 30 * time.Minute
+	case "1h":
+		return time.Hour
+	case "4h":
+		return 4 * time.Hour
+	case "1d":
+		return 24 * time.Hour
+	default:
+		return time.Hour
+	}
 }

@@ -19,14 +19,16 @@ type Kline struct {
 	NumTrades                int64   `json:"num_trades" db:"num_trades"`
 	TakerBuyBaseAssetVolume  float64 `json:"taker_buy_base_asset_volume" db:"taker_buy_base_asset_volume"`
 	TakerBuyQuoteAssetVolume float64 `json:"taker_buy_quote_asset_volume" db:"taker_buy_quote_asset_volume"`
+	Interval                 string  `json:"interval" db:"interval"`
 }
 
 type MapKlines map[string][]Kline
 
 type GetKlinesQueryParams struct {
-	From   string `form:"from"`
-	To     string `form:"to"`
-	Symbol string `form:"symbol,omitempty"`
+	From     string `form:"from"`
+	To       string `form:"to"`
+	Interval string `form:"interval"`
+	Symbol   string `form:"symbol,omitempty"`
 }
 
 type History struct {

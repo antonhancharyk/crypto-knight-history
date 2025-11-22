@@ -2,7 +2,7 @@ name: main
 on:
   push:
     branches:
-      - main
+      - main1
 
 env:
   REGISTRY: antgoncharik
@@ -62,4 +62,3 @@ jobs:
             docker-compose pull
             docker-compose up -d --remove-orphans
             docker image prune -f
-            

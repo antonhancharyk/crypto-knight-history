@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 	"os"
 	"time"
 
@@ -20,8 +19,6 @@ func New() *Client {
 }
 
 func (c *Client) Connect() error {
-	log.Println("gRPC client is connecting...")
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -41,7 +38,6 @@ func (c *Client) Connect() error {
 
 func (c *Client) Close() error {
 	if c.conn != nil {
-		log.Println("shutting down gRPC client connection...")
 		return c.conn.Close()
 	}
 

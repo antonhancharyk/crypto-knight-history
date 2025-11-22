@@ -1,0 +1,1 @@
+ALTER TABLE klines ADD COLUMN interval TEXT NOT NULL DEFAULT '1h';

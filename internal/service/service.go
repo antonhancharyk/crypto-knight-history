@@ -14,10 +14,9 @@ import (
 
 type Kline interface {
 	GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error)
-	GetLastKline() (entity.Kline, error)
 	GetBinanceKlines(params url.Values) ([]entity.Kline, error)
 	CreateBulk(tracks []entity.Kline) error
-	LoadKlinesForPeriod() error
+	LoadInterval(interval string) error
 	ProcessHistory(ctx context.Context, params entity.GetKlinesQueryParams) ([]entity.History, error)
 }
 

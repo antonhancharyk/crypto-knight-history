@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS klines_symbol_interval_open_time_idx;

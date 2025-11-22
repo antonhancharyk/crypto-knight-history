@@ -1,11 +1,12 @@
 package kline
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/antonhancharyk/crypto-knight-history/internal/constant"
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -23,7 +24,7 @@ func (t *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 	var (
 		klines []entity.Kline
 		args   []any
-		query  = "select * from klines where open_time >= $1 and open_time <= $2"
+		query  = "SELECT * FROM klines WHERE open_time >= $1 AND open_time <= $2 AND interval = $3"
 	)
 
 	layout := "2006-01-02 15:04:05"
@@ -51,33 +52,41 @@ func (t *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 		return nil, fmt.Errorf("invalid 'to' datetime: %w", err)
 	}
 
-	fromMillis := fromTime.Add(-constant.KLINES_BATCH_DURATION).UnixMilli()
+	intervalDuration := intervalDuration(params.Interval)
+	fromMillis := fromTime.Add(-480 * intervalDuration).UnixMilli()
 	toMillis := toTime.UnixMilli()
 
-	args = append(args, fromMillis, toMillis)
+	args = append(args, fromMillis, toMillis, params.Interval)
 
 	if params.Symbol != "" {
-		query += " and symbol = $3"
+		query += " AND symbol = $4"
 		args = append(args, params.Symbol)
 	}
 
-	query += " order by open_time asc, symbol asc"
+	query += " ORDER BY open_time ASC, symbol ASC"
 
 	err = t.db.Select(&klines, query, args...)
 
 	return klines, err
 }
 
-func (t *Kline) GetLastKline() (entity.Kline, error) {
-	klines := []entity.Kline{}
-
-	err := t.db.Select(&klines, "select * from klines order by open_time desc limit 1")
-
-	if len(klines) == 0 {
+func (t *Kline) GetLastKlineByInterval(interval string) (entity.Kline, error) {
+	var k entity.Kline
+	query := `
+        SELECT * FROM klines
+        WHERE interval = $1
+        ORDER BY open_time DESC
+        LIMIT 1
+    `
+	err := t.db.Get(&k, query, interval)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return entity.Kline{}, nil
+		}
 		return entity.Kline{}, err
 	}
 
-	return klines[0], err
+	return k, nil
 }
 
 func (k *Kline) CreateBulk(klines []entity.Kline) error {
@@ -89,11 +98,11 @@ func (k *Kline) CreateBulk(klines []entity.Kline) error {
 	var values []any
 
 	for i, kline := range klines {
-		base := i * 12
+		base := i * 13
 		placeholders = append(placeholders, fmt.Sprintf(
-			"($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
+			"($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
 			base+1, base+2, base+3, base+4, base+5, base+6,
-			base+7, base+8, base+9, base+10, base+11, base+12,
+			base+7, base+8, base+9, base+10, base+11, base+12, base+13,
 		))
 		values = append(values,
 			kline.Symbol,
@@ -108,6 +117,7 @@ func (k *Kline) CreateBulk(klines []entity.Kline) error {
 			kline.NumTrades,
 			kline.TakerBuyBaseAssetVolume,
 			kline.TakerBuyQuoteAssetVolume,
+			kline.Interval,
 		)
 	}
 
@@ -115,7 +125,8 @@ func (k *Kline) CreateBulk(klines []entity.Kline) error {
 		INSERT INTO klines (
 			symbol, open_time, open_price, high_price, low_price,
 			close_price, volume, close_time, quote_asset_volume,
-			num_trades, taker_buy_base_asset_volume, taker_buy_quote_asset_volume
+			num_trades, taker_buy_base_asset_volume, taker_buy_quote_asset_volume,
+			interval
 		)
 		VALUES %s`, strings.Join(placeholders, ","))
 
@@ -129,4 +140,21 @@ func (k *Kline) CreateBulk(klines []entity.Kline) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+func intervalDuration(interval string) time.Duration {
+	switch interval {
+	case "15m":
+		return 15 * time.Minute
+	case "30m":
+		return 30 * time.Minute
+	case "1h":
+		return time.Hour
+	case "4h":
+		return 4 * time.Hour
+	case "1d":
+		return 24 * time.Hour
+	default:
+		return time.Hour
+	}
 }
