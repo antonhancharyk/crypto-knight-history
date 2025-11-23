@@ -32,15 +32,14 @@ type GetKlinesQueryParams struct {
 }
 
 type History struct {
-	Symbol                              string                      `json:"symbol"`
-	SumPositivePercentageChanges        float64                     `json:"sum_positive_percentage_changes"`
-	CountPositiveChanges                int32                       `json:"count_positive_changes"`
-	SumNegativePercentageChanges        float64                     `json:"sum_negative_percentage_changes"`
-	CountNegativeChanges                int32                       `json:"count_negative_changes"`
-	CountStopMarketOrders               int32                       `json:"count_stop_market_orders"`
-	SumIncomplitedStopPercentageChanges float64                     `json:"sum_incomplited_stop_percentage_changes"`
-	CountIncomplitedStop                int32                       `json:"count_incomplited_stop"`
-	CountTransactions                   int32                       `json:"count_transactions"`
-	Grade                               float64                     `json:"grade"`
-	Conditions                          map[string]map[string]int32 `json:"conditions"`
+	Symbol                              string  `json:"symbol"`
+	SumPositivePercentageChanges        float64 `json:"sum_positive_percentage_changes"`
+	CountPositiveChanges                int32   `json:"count_positive_changes"`
+	SumNegativePercentageChanges        float64 `json:"sum_negative_percentage_changes"`
+	CountNegativeChanges                int32   `json:"count_negative_changes"`
+	CountStopMarketOrders               int32   `json:"count_stop_market_orders"`
+	SumIncomplitedStopPercentageChanges float64 `json:"sum_incomplited_stop_percentage_changes"`
+	CountIncomplitedStop                int32   `json:"count_incomplited_stop"`
+	CountTransactions                   int32   `json:"count_transactions"`
+	Grade                               float64 `json:"grade"`
 }

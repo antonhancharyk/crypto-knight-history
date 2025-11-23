@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"maps"
 	"net/url"
 	"sort"
 	"strconv"
@@ -229,6 +228,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 					NumTrades:                v.NumTrades,
 					TakerBuyBaseAssetVolume:  v.TakerBuyBaseAssetVolume,
 					TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume,
+					Interval:                 v.Interval,
 				})
 			}
 
@@ -240,13 +240,6 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				return
 			}
 
-			conditions := make(map[string]map[string]int32)
-			for k, v := range res.Conditions {
-				if _, ok := conditions[k]; !ok {
-					conditions[k] = make(map[string]int32)
-				}
-				maps.Copy(conditions[k], v.V)
-			}
 			h := entity.History{
 				Symbol:                              res.Symbol,
 				SumPositivePercentageChanges:        res.SumPositivePercentageChanges,
@@ -257,7 +250,6 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				CountIncomplitedStop:                res.CountIncomplitedStop,
 				CountTransactions:                   res.CountTransactions,
 				Grade:                               res.SumPositivePercentageChanges - res.SumNegativePercentageChanges - (float64(res.CountStopMarketOrders * 10)) - res.SumIncomplitedStopPercentageChanges,
-				Conditions:                          conditions,
 				SumIncomplitedStopPercentageChanges: res.SumIncomplitedStopPercentageChanges,
 			}
 
@@ -280,7 +272,6 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		grade                               float64
 	)
 
-	conditions := make(map[string]map[string]int32)
 	for _, v := range histories {
 		sumPositivePercentageChanges += v.SumPositivePercentageChanges
 		sumNegativePercentageChanges += v.SumNegativePercentageChanges
@@ -290,15 +281,6 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		countIncomplitedStop += v.CountIncomplitedStop
 		sumIncomplitedStopPercentageChanges += v.SumIncomplitedStopPercentageChanges
 		grade += v.Grade
-
-		for kk, vv := range v.Conditions {
-			if _, ok := conditions[kk]; !ok {
-				conditions[kk] = make(map[string]int32)
-			}
-			for kkk, vvv := range vv {
-				conditions[kk][kkk] += vvv
-			}
-		}
 	}
 
 	sort.Slice(histories, func(i, j int) bool {
@@ -316,7 +298,6 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		CountIncomplitedStop:                countIncomplitedStop,
 		CountTransactions:                   countPositiveChanges + countNegativeChanges,
 		Grade:                               grade,
-		Conditions:                          conditions,
 	}
 
 	histories = append([]entity.History{h}, histories...)
