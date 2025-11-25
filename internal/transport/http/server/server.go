@@ -53,9 +53,10 @@ func (s *HTTPServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *HTTPServer) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 	params := entity.GetKlinesQueryParams{
-		From:   r.URL.Query().Get("from"),
-		To:     r.URL.Query().Get("to"),
-		Symbol: r.URL.Query().Get("symbol"),
+		From:     r.URL.Query().Get("from"),
+		To:       r.URL.Query().Get("to"),
+		Symbol:   r.URL.Query().Get("symbol"),
+		Interval: r.URL.Query().Get("interval"),
 	}
 
 	task := s.svc.Queue.CreateTask(params)

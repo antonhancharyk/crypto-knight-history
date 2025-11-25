@@ -25,6 +25,10 @@ func (c *Client) Connect() error {
 	conn, err := grpc.DialContext(ctx, os.Getenv("GRPC_HOST"),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(50*1024*1024),
+			grpc.MaxCallSendMsgSize(50*1024*1024),
+		),
 	)
 	if err != nil {
 		return err

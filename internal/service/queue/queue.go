@@ -62,7 +62,7 @@ func (q *TaskQueue) worker() {
 		task.Status = entity.StatusRunning
 		task.StartAt = time.Now().UTC()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Minute)
 		result, err := q.klineSvc.ProcessHistory(ctx, task.Params)
 		cancel()
 
