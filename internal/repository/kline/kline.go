@@ -74,7 +74,7 @@ func (t *Kline) GetKlines1h(params entity.GetKlinesQueryParams) ([]entity.Kline,
 	var (
 		klines []entity.Kline
 		args   []any
-		query  = "SELECT * FROM klines WHERE open_time >= $1 AND open_time <= $2 AND interval = '1h"
+		query  = "SELECT * FROM klines WHERE open_time >= $1 AND open_time <= $2 AND interval = '1h'"
 	)
 
 	layout := "2006-01-02 15:04:05"

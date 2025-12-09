@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/antonhancharyk/crypto-knight-history/internal/constant"
 	"github.com/antonhancharyk/crypto-knight-history/internal/db"
 	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
 	"github.com/antonhancharyk/crypto-knight-history/internal/service"
@@ -55,27 +54,27 @@ func main() {
 		}
 	}()
 
-	startAll := time.Now()
-	for _, interval := range constant.KLINE_INTERVALS {
-		start := time.Now()
+	// startAll := time.Now()
+	// for _, interval := range constant.KLINE_INTERVALS {
+	// 	start := time.Now()
 
-		log.Printf("%s started at %s", interval, start.UTC().Format(time.RFC3339))
+	// 	log.Printf("%s started at %s", interval, start.UTC().Format(time.RFC3339))
 
-		err := svc.Kline.LoadInterval(interval)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
+	// 	err := svc.Kline.LoadInterval(interval)
+	// 	if err != nil {
+	// 		log.Print(err)
+	// 		continue
+	// 	}
 
-		finish := time.Now()
-		log.Printf(
-			"%s finished at %s (duration: %s)",
-			interval,
-			finish.UTC().Format(time.RFC3339),
-			finish.Sub(start).Round(time.Millisecond),
-		)
-	}
-	log.Printf("all klines loaded in %s", time.Since(startAll).Round(time.Millisecond))
+	// 	finish := time.Now()
+	// 	log.Printf(
+	// 		"%s finished at %s (duration: %s)",
+	// 		interval,
+	// 		finish.UTC().Format(time.RFC3339),
+	// 		finish.Sub(start).Round(time.Millisecond),
+	// 	)
+	// }
+	// log.Printf("all klines loaded in %s", time.Since(startAll).Round(time.Millisecond))
 
 	<-quit
 
