@@ -8,6 +8,8 @@ github.com/antongoncharik/crypto-knight-protos v1.1.10 h1:4zIKLdg7QBGG8LzS0jmVCk
 github.com/antongoncharik/crypto-knight-protos v1.1.10/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
 github.com/antongoncharik/crypto-knight-protos v1.1.11 h1:NtmRpaCiWdIFpBIckwWaUUbeodL94EikDWXGSMLwNjQ=
 github.com/antongoncharik/crypto-knight-protos v1.1.11/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
+github.com/antongoncharik/crypto-knight-protos v1.1.13 h1:+1fxOwZtzouHynVthHPOaFMVsEfCwKKD3EqRyPydHzs=
+github.com/antongoncharik/crypto-knight-protos v1.1.13/go.mod h1:t92GoWG4lPAUgM/1KjGFXqcP0ans7BVNvBkw+5f7Dso=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=

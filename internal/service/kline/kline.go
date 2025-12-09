@@ -34,6 +34,14 @@ func (k *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 	return k.repo.Kline.GetKlines(params)
 }
 
+func (k *Kline) GetKlines1h(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	return k.repo.Kline.GetKlines1h(params)
+}
+
+func (k *Kline) GetKlines30m(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	return k.repo.Kline.GetKlines30m(params)
+}
+
 func (k *Kline) GetBinanceKlines(params url.Values) ([]entity.Kline, error) {
 	sbl := params.Get("symbol")
 
@@ -188,19 +196,27 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 		mu        sync.Mutex
 	)
 
-	klines, err := k.GetKlines(params)
+	klines30m, err := k.GetKlines30m(params)
+	if err != nil {
+		return nil, err
+	}
+	klines1h, err := k.GetKlines1h(params)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make(map[string][]entity.Kline)
-	for _, kline := range klines {
-		results[kline.Symbol] = append(results[kline.Symbol], kline)
+	results30m := make(map[string][]entity.Kline)
+	for _, kline := range klines30m {
+		results30m[kline.Symbol] = append(results30m[kline.Symbol], kline)
+	}
+	results1h := make(map[string][]entity.Kline)
+	for _, kline := range klines1h {
+		results1h[kline.Symbol] = append(results1h[kline.Symbol], kline)
 	}
 
 	sem := make(chan struct{}, 10)
 	var wgGRPC sync.WaitGroup
-	for resSymbol, resKlines := range results {
+	for resSymbol, resKlines := range results30m {
 		if len(resKlines) == 0 {
 			continue
 		}
@@ -232,8 +248,30 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				})
 			}
 
+			kls := results1h[symbol]
+			var inputKlines1h []*pbHistory.InputKline
+			for _, v := range kls {
+				inputKlines1h = append(inputKlines1h, &pbHistory.InputKline{
+					Id:                       v.Id,
+					Symbol:                   v.Symbol,
+					OpenTime:                 v.OpenTime,
+					OpenPrice:                v.OpenPrice,
+					HighPrice:                v.HighPrice,
+					LowPrice:                 v.LowPrice,
+					ClosePrice:               v.ClosePrice,
+					Volume:                   v.Volume,
+					CloseTime:                v.CloseTime,
+					QuoteAssetVolume:         v.QuoteAssetVolume,
+					NumTrades:                v.NumTrades,
+					TakerBuyBaseAssetVolume:  v.TakerBuyBaseAssetVolume,
+					TakerBuyQuoteAssetVolume: v.TakerBuyQuoteAssetVolume,
+					Interval:                 v.Interval,
+				})
+			}
+
 			res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{
-				Klines: inputKlines,
+				Klines:   inputKlines,
+				Klines1H: inputKlines1h,
 			})
 			if err != nil {
 				fmt.Printf("failed to process history for %s: %v\n", symbol, err)

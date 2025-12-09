@@ -70,6 +70,106 @@ func (t *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, e
 	return klines, err
 }
 
+func (t *Kline) GetKlines1h(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	var (
+		klines []entity.Kline
+		args   []any
+		query  = "SELECT * FROM klines WHERE open_time >= $1 AND open_time <= $2 AND interval = '1h"
+	)
+
+	layout := "2006-01-02 15:04:05"
+
+	var fromStr, toStr string
+
+	if params.From == "" || params.To == "" {
+		now := time.Now()
+		firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		lastOfMonth := firstOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+
+		fromStr = firstOfMonth.Format(layout)
+		toStr = lastOfMonth.Format(layout)
+	} else {
+		fromStr = params.From
+		toStr = params.To
+	}
+
+	fromTime, err := time.ParseInLocation(layout, fromStr, time.UTC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'from' datetime: %w", err)
+	}
+	toTime, err := time.ParseInLocation(layout, toStr, time.UTC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'to' datetime: %w", err)
+	}
+
+	intervalDuration := intervalDuration("1h")
+	fromMillis := fromTime.Add(-480 * intervalDuration).UnixMilli()
+	toMillis := toTime.UnixMilli()
+
+	args = append(args, fromMillis, toMillis)
+
+	if params.Symbol != "" {
+		query += " AND symbol = $3"
+		args = append(args, params.Symbol)
+	}
+
+	query += " ORDER BY open_time ASC, symbol ASC"
+
+	err = t.db.Select(&klines, query, args...)
+
+	return klines, err
+}
+
+func (t *Kline) GetKlines30m(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	var (
+		klines []entity.Kline
+		args   []any
+		query  = "SELECT * FROM klines WHERE open_time >= $1 AND open_time <= $2 AND interval = '30m'"
+	)
+
+	layout := "2006-01-02 15:04:05"
+
+	var fromStr, toStr string
+
+	if params.From == "" || params.To == "" {
+		now := time.Now()
+		firstOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		lastOfMonth := firstOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+
+		fromStr = firstOfMonth.Format(layout)
+		toStr = lastOfMonth.Format(layout)
+	} else {
+		fromStr = params.From
+		toStr = params.To
+	}
+
+	fromTime, err := time.ParseInLocation(layout, fromStr, time.UTC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'from' datetime: %w", err)
+	}
+	toTime, err := time.ParseInLocation(layout, toStr, time.UTC)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'to' datetime: %w", err)
+	}
+
+	intervalDuration := intervalDuration("30m")
+	fromMillis := fromTime.Add(-480 * intervalDuration).UnixMilli()
+	toMillis := toTime.UnixMilli()
+
+	args = append(args, fromMillis, toMillis)
+
+	if params.Symbol != "" {
+		query += " AND symbol = $3"
+		args = append(args, params.Symbol)
+	}
+
+	query += " ORDER BY open_time ASC, symbol ASC"
+
+	err = t.db.Select(&klines, query, args...)
+
+	return klines, err
+}
+
 func (t *Kline) GetLastKlineByInterval(interval string) (entity.Kline, error) {
 	var k entity.Kline
 	query := `
