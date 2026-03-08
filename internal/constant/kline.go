@@ -6,5 +6,4 @@ const (
 
 var KLINE_INTERVALS = []string{
 	"30m",
-	"1h",
 }
