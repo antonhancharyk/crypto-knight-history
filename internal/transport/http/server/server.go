@@ -3,20 +3,29 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"log"
 	"net"
 	"net/http"
-	"os"
 
+	"github.com/antonhancharyk/crypto-knight-history/internal/config"
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
-	"github.com/antonhancharyk/crypto-knight-history/internal/service"
+	apperr "github.com/antonhancharyk/crypto-knight-history/internal/errors"
 )
+
+// Backend is the interface required by HTTP handlers (allows testing with a fake).
+type Backend interface {
+	GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error)
+	CreateTask(params entity.GetKlinesQueryParams) *entity.Task
+	GetTask(id string) (*entity.Task, bool)
+}
 
 type HTTPServer struct {
 	server *http.Server
-	svc    *service.Service
+	svc    Backend
 }
 
-func New(svc *service.Service) *HTTPServer {
+func New(svc Backend, cfg config.Server) *HTTPServer {
 	s := &HTTPServer{svc: svc}
 
 	mux := http.NewServeMux()
@@ -26,7 +35,7 @@ func New(svc *service.Service) *HTTPServer {
 	mux.HandleFunc("/klines", s.handleGetKlines)
 
 	s.server = &http.Server{
-		Addr:    ":" + os.Getenv("APP_SERVER_PORT"),
+		Addr:    ":" + cfg.Port,
 		Handler: mux,
 	}
 
@@ -59,9 +68,10 @@ func (s *HTTPServer) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		Interval: r.URL.Query().Get("interval"),
 	}
 
-	task := s.svc.Queue.CreateTask(params)
+	task := s.svc.CreateTask(params)
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"task_id": task.ID,
 	})
@@ -70,13 +80,13 @@ func (s *HTTPServer) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		http.Error(w, "missing id", http.StatusBadRequest)
+		writeError(w, apperr.ErrBadRequest)
 		return
 	}
 
-	task, ok := s.svc.Queue.GetTask(id)
+	task, ok := s.svc.GetTask(id)
 	if !ok {
-		http.Error(w, "task not found", http.StatusNotFound)
+		writeError(w, apperr.ErrNotFound)
 		return
 	}
 
@@ -86,17 +96,37 @@ func (s *HTTPServer) handleTaskStatus(w http.ResponseWriter, r *http.Request) {
 
 func (s *HTTPServer) handleGetKlines(w http.ResponseWriter, r *http.Request) {
 	params := entity.GetKlinesQueryParams{
-		From:   r.URL.Query().Get("from"),
-		To:     r.URL.Query().Get("to"),
-		Symbol: r.URL.Query().Get("symbol"),
+		From:     r.URL.Query().Get("from"),
+		To:       r.URL.Query().Get("to"),
+		Symbol:   r.URL.Query().Get("symbol"),
+		Interval: r.URL.Query().Get("interval"),
 	}
 
-	klines, err := s.svc.Kline.GetKlines(params)
+	klines, err := s.svc.GetKlines(params)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(klines)
+}
+
+func writeError(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+	msg := err.Error()
+
+	switch {
+	case errors.Is(err, apperr.ErrNotFound):
+		status = http.StatusNotFound
+		msg = "not found"
+	case errors.Is(err, apperr.ErrBadRequest):
+		status = http.StatusBadRequest
+		msg = "bad request"
+	}
+
+	if status >= 500 {
+		log.Printf("server error: %v", err)
+	}
+	http.Error(w, msg, status)
 }

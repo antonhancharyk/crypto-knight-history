@@ -14,38 +14,36 @@ import (
 	pbHistory "github.com/antongoncharik/crypto-knight-protos/gen/go/history"
 	"github.com/antonhancharyk/crypto-knight-history/internal/constant"
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
-	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
-	grpcClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/grpc/client"
-	"github.com/antonhancharyk/crypto-knight-history/internal/transport/http/client"
+	"github.com/antonhancharyk/crypto-knight-history/internal/ports"
 	"github.com/antonhancharyk/crypto-knight-history/pkg/utilities"
 )
 
 type Kline struct {
-	repo       *repository.Repository
-	httpClient *client.HTTPClient
-	grpcClient *grpcClient.Client
+	repo   ports.KlineRepository
+	binance ports.BinanceClient
+	history ports.HistoryClient
 }
 
-func New(repo *repository.Repository, httpClient *client.HTTPClient, grpcClient *grpcClient.Client) *Kline {
-	return &Kline{repo: repo, httpClient: httpClient, grpcClient: grpcClient}
+func New(repo ports.KlineRepository, binance ports.BinanceClient, history ports.HistoryClient) *Kline {
+	return &Kline{repo: repo, binance: binance, history: history}
 }
 
 func (k *Kline) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
-	return k.repo.Kline.GetKlines(params)
+	return k.repo.GetKlines(params)
 }
 
 func (k *Kline) GetKlines1h(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
-	return k.repo.Kline.GetKlines1h(params)
+	return k.repo.GetKlines1h(params)
 }
 
 func (k *Kline) GetKlines30m(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
-	return k.repo.Kline.GetKlines30m(params)
+	return k.repo.GetKlines30m(params)
 }
 
 func (k *Kline) GetBinanceKlines(params url.Values) ([]entity.Kline, error) {
 	sbl := params.Get("symbol")
 
-	res, err := k.httpClient.Get(constant.KLINES_URI + "?" + params.Encode())
+	res, err := k.binance.Get(constant.KLINES_URI + "?" + params.Encode())
 	if err != nil {
 		return nil, err
 	}
@@ -96,16 +94,16 @@ func (k *Kline) GetBinanceKlines(params url.Values) ([]entity.Kline, error) {
 }
 
 func (k *Kline) CreateBulk(klines []entity.Kline) error {
-	return k.repo.Kline.CreateBulk(klines)
+	return k.repo.CreateBulk(klines)
 }
 
 func (k *Kline) LoadInterval(interval string) error {
-	last, err := k.repo.Kline.GetLastKlineByInterval(interval)
+	last, err := k.repo.GetLastKlineByInterval(interval)
 	if err != nil {
 		return err
 	}
 
-	step := intervalDuration(interval)
+	step := utilities.IntervalDuration(interval)
 
 	startTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	if last.OpenTime != 0 {
@@ -269,7 +267,7 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 				})
 			}
 
-			res, err := k.grpcClient.History.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{
+			res, err := k.history.ProcessHistory(ctx, &pbHistory.ProcessHistoryRequest{
 				Klines:   inputKlines,
 				Klines1H: inputKlines1h,
 			})
@@ -341,21 +339,4 @@ func (k *Kline) ProcessHistory(ctx context.Context, params entity.GetKlinesQuery
 	histories = append([]entity.History{h}, histories...)
 
 	return histories, nil
-}
-
-func intervalDuration(interval string) time.Duration {
-	switch interval {
-	case "15m":
-		return 15 * time.Minute
-	case "30m":
-		return 30 * time.Minute
-	case "1h":
-		return time.Hour
-	case "4h":
-		return 4 * time.Hour
-	case "1d":
-		return 24 * time.Hour
-	default:
-		return time.Hour
-	}
 }

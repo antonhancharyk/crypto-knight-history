@@ -2,9 +2,9 @@ package db
 
 import (
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/antonhancharyk/crypto-knight-history/internal/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -17,14 +17,10 @@ func New() *Client {
 	return &Client{}
 }
 
-func (c *Client) Connect() error {
+func (c *Client) Connect(cfg config.DB) error {
 	connStr := fmt.Sprintf(
-		"user=%s dbname=%s sslmode=disable password=%s host=%s port=%s",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_NAME"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Name,
 	)
 
 	db, err := sqlx.Connect("postgres", connStr)

@@ -1,4 +1,4 @@
-package client
+package binance
 
 import (
 	"bytes"
@@ -20,19 +20,19 @@ const (
 	DELETE = "DELETE"
 )
 
-type HTTPClient struct {
+type Client struct {
 	client *http.Client
 }
 
-func New() *HTTPClient {
-	return &HTTPClient{
+func New() *Client {
+	return &Client{
 		client: &http.Client{
 			Timeout: 240 * time.Second,
 		},
 	}
 }
 
-func (c *HTTPClient) Get(url string) ([]byte, error) {
+func (c *Client) Get(url string) ([]byte, error) {
 	const maxRetries = 3
 	const retryDelay = 2 * time.Second
 
@@ -88,7 +88,7 @@ func (c *HTTPClient) Get(url string) ([]byte, error) {
 	return nil, fmt.Errorf("all retry attempts failed: %w", lastErr)
 }
 
-func (c *HTTPClient) Post(url string, body []byte) ([]byte, error) {
+func (c *Client) Post(url string, body []byte) ([]byte, error) {
 	req, err := http.NewRequest(POST, url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (c *HTTPClient) Post(url string, body []byte) ([]byte, error) {
 	return body, err
 }
 
-func (c *HTTPClient) Delete(url string) ([]byte, error) {
+func (c *Client) Delete(url string) ([]byte, error) {
 	req, err := http.NewRequest(DELETE, url, nil)
 	if err != nil {
 		return nil, err
@@ -128,21 +128,20 @@ func (c *HTTPClient) Delete(url string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if res.StatusCode >= 400 {
-		return nil, errors.New(string(body))
+		return nil, errors.New(string(resBody))
 	}
 
-	return body, nil
+	return resBody, nil
 }
 
 func HmacSha256(data string, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(data))
-
 	return hex.EncodeToString(h.Sum(nil))
 }

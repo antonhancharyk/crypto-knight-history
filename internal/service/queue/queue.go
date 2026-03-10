@@ -6,22 +6,20 @@ import (
 	"time"
 
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
-	"github.com/antonhancharyk/crypto-knight-history/internal/service/kline"
+	"github.com/antonhancharyk/crypto-knight-history/internal/ports"
 	"github.com/google/uuid"
 )
-
-type HandlerFunc func(task *entity.Task) error
 
 type TaskQueue struct {
 	tasks    sync.Map
 	jobs     chan string
-	klineSvc *kline.Kline
+	processor ports.HistoryProcessor
 }
 
-func New(klineSvc *kline.Kline) *TaskQueue {
+func New(processor ports.HistoryProcessor) *TaskQueue {
 	q := &TaskQueue{
-		jobs:     make(chan string, 100),
-		klineSvc: klineSvc,
+		jobs:      make(chan string, 100),
+		processor: processor,
 	}
 
 	go q.worker()
@@ -63,7 +61,7 @@ func (q *TaskQueue) worker() {
 		task.StartAt = time.Now().UTC()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Minute)
-		result, err := q.klineSvc.ProcessHistory(ctx, task.Params)
+		result, err := q.processor.ProcessHistory(ctx, task.Params)
 		cancel()
 
 		task.EndAt = time.Now().UTC()

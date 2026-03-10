@@ -5,11 +5,9 @@ import (
 	"net/url"
 
 	"github.com/antonhancharyk/crypto-knight-history/internal/entity"
-	"github.com/antonhancharyk/crypto-knight-history/internal/repository"
+	"github.com/antonhancharyk/crypto-knight-history/internal/ports"
 	"github.com/antonhancharyk/crypto-knight-history/internal/service/kline"
 	"github.com/antonhancharyk/crypto-knight-history/internal/service/queue"
-	grpcClient "github.com/antonhancharyk/crypto-knight-history/internal/transport/grpc/client"
-	"github.com/antonhancharyk/crypto-knight-history/internal/transport/http/client"
 )
 
 type Kline interface {
@@ -30,11 +28,22 @@ type Service struct {
 	Queue
 }
 
-func New(repo *repository.Repository, httpClient *client.HTTPClient, grpcClient *grpcClient.Client) *Service {
-	klineSvc := kline.New(repo, httpClient, grpcClient)
-
+func New(klineRepo ports.KlineRepository, binance ports.BinanceClient, history ports.HistoryClient) *Service {
+	klineSvc := kline.New(klineRepo, binance, history)
 	return &Service{
 		Kline: klineSvc,
 		Queue: queue.New(klineSvc),
 	}
+}
+
+func (s *Service) GetKlines(params entity.GetKlinesQueryParams) ([]entity.Kline, error) {
+	return s.Kline.GetKlines(params)
+}
+
+func (s *Service) CreateTask(params entity.GetKlinesQueryParams) *entity.Task {
+	return s.Queue.CreateTask(params)
+}
+
+func (s *Service) GetTask(id string) (*entity.Task, bool) {
+	return s.Queue.GetTask(id)
 }
